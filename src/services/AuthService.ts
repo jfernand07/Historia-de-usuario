@@ -1,9 +1,8 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { Usuario } from '../models/Usuario';
-import { config } from '../config';
 import { Logger } from '../utils/helpers';
 import { LoginDTO, RegisterDTO } from '../dto/AuthDTO';
+import { TokenService } from './TokenService';
 
 export interface LoginResult {
   user: {
@@ -70,8 +69,11 @@ export class AuthService {
       }
 
       // Generate tokens
-      const accessToken = this.generateAccessToken(user);
-      const refreshToken = this.generateRefreshToken(user);
+      const { accessToken, refreshToken } = TokenService.generateTokenPair({
+        id: user.id,
+        email: user.email,
+        rol: user.rol
+      });
 
       Logger.info(`User logged in successfully: ${user.email}`);
 
@@ -92,48 +94,13 @@ export class AuthService {
     }
   }
 
-  /**
-   * Generate access token
-   */
-  private generateAccessToken(user: Usuario): string {
-    const payload = {
-      id: user.id,
-      email: user.email,
-      rol: user.rol
-    };
-
-    return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.expiresIn,
-      issuer: 'sportsline-api',
-      audience: 'sportsline-client'
-    });
-  }
-
-  /**
-   * Generate refresh token
-   */
-  private generateRefreshToken(user: Usuario): string {
-    const payload = {
-      id: user.id,
-      type: 'refresh'
-    };
-
-    return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.refreshExpiresIn,
-      issuer: 'sportsline-api',
-      audience: 'sportsline-client'
-    });
-  }
 
   /**
    * Verify and decode token
    */
   async verifyToken(token: string): Promise<any> {
     try {
-      return jwt.verify(token, config.jwt.secret, {
-        issuer: 'sportsline-api',
-        audience: 'sportsline-client'
-      });
+      return TokenService.verifyToken(token);
     } catch (error) {
       Logger.error('Token verification failed:', error);
       throw error;
@@ -157,7 +124,11 @@ export class AuthService {
         return null;
       }
 
-      const newAccessToken = this.generateAccessToken(user);
+      const newAccessToken = TokenService.generateAccessToken({
+        id: user.id,
+        email: user.email,
+        rol: user.rol
+      });
       
       Logger.info(`Access token refreshed for user: ${user.email}`);
       
