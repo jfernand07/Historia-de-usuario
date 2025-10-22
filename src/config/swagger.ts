@@ -79,6 +79,102 @@ export const swaggerConfig = {
           description: 'JWT token obtenido del endpoint de login'
         }
       },
+      parameters: {
+        PageParam: {
+          name: 'page',
+          in: 'query',
+          description: 'Número de página',
+          required: false,
+          schema: {
+            type: 'integer',
+            minimum: 1,
+            default: 1
+          }
+        },
+        LimitParam: {
+          name: 'limit',
+          in: 'query',
+          description: 'Número de elementos por página',
+          required: false,
+          schema: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 100,
+            default: 10
+          }
+        },
+        IdParam: {
+          name: 'id',
+          in: 'path',
+          description: 'ID del recurso',
+          required: true,
+          schema: {
+            type: 'integer',
+            minimum: 1
+          }
+        },
+        SearchParam: {
+          name: 'search',
+          in: 'query',
+          description: 'Término de búsqueda',
+          required: false,
+          schema: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 100
+          }
+        },
+        EstadoParam: {
+          name: 'estado',
+          in: 'query',
+          description: 'Estado del recurso',
+          required: false,
+          schema: {
+            type: 'string',
+            enum: ['pendiente', 'confirmado', 'enviado', 'entregado', 'cancelado']
+          }
+        },
+        CategoriaParam: {
+          name: 'categoria',
+          in: 'query',
+          description: 'Categoría del producto',
+          required: false,
+          schema: {
+            type: 'string',
+            minLength: 2,
+            maxLength: 50
+          }
+        },
+        ActivoParam: {
+          name: 'activo',
+          in: 'query',
+          description: 'Estado activo del recurso',
+          required: false,
+          schema: {
+            type: 'boolean'
+          }
+        },
+        FechaInicioParam: {
+          name: 'fechaInicio',
+          in: 'query',
+          description: 'Fecha de inicio del rango',
+          required: false,
+          schema: {
+            type: 'string',
+            format: 'date'
+          }
+        },
+        FechaFinParam: {
+          name: 'fechaFin',
+          in: 'query',
+          description: 'Fecha de fin del rango',
+          required: false,
+          schema: {
+            type: 'string',
+            format: 'date'
+          }
+        }
+      },
       schemas: {
         // Common schemas
         ErrorResponse: {
@@ -614,6 +710,162 @@ export const swaggerConfig = {
               example: '2024-01-15T10:30:00Z'
             }
           }
+        },
+        
+        // Statistics schemas
+        Statistics: {
+          type: 'object',
+          properties: {
+            total: {
+              type: 'number',
+              example: 150,
+              description: 'Total de registros'
+            },
+            active: {
+              type: 'number',
+              example: 120,
+              description: 'Registros activos'
+            },
+            inactive: {
+              type: 'number',
+              example: 30,
+              description: 'Registros inactivos'
+            },
+            createdAt: {
+              type: 'object',
+              properties: {
+                today: {
+                  type: 'number',
+                  example: 5,
+                  description: 'Registros creados hoy'
+                },
+                thisWeek: {
+                  type: 'number',
+                  example: 25,
+                  description: 'Registros creados esta semana'
+                },
+                thisMonth: {
+                  type: 'number',
+                  example: 100,
+                  description: 'Registros creados este mes'
+                }
+              }
+            }
+          }
+        },
+        
+        // Order Statistics
+        OrderStatistics: {
+          type: 'object',
+          properties: {
+            totalPedidos: {
+              type: 'number',
+              example: 150,
+              description: 'Total de pedidos'
+            },
+            pedidosPorEstado: {
+              type: 'object',
+              properties: {
+                pendiente: {
+                  type: 'number',
+                  example: 10
+                },
+                confirmado: {
+                  type: 'number',
+                  example: 20
+                },
+                enviado: {
+                  type: 'number',
+                  example: 15
+                },
+                entregado: {
+                  type: 'number',
+                  example: 100
+                },
+                cancelado: {
+                  type: 'number',
+                  example: 5
+                }
+              }
+            },
+            ventasTotales: {
+              type: 'number',
+              format: 'decimal',
+              example: 50000.00,
+              description: 'Ventas totales'
+            },
+            promedioPedido: {
+              type: 'number',
+              format: 'decimal',
+              example: 333.33,
+              description: 'Promedio por pedido'
+            },
+            pedidosUltimoMes: {
+              type: 'number',
+              example: 45,
+              description: 'Pedidos del último mes'
+            }
+          }
+        },
+        
+        // Stock Update
+        StockUpdate: {
+          type: 'object',
+          required: ['cantidad', 'operacion'],
+          properties: {
+            cantidad: {
+              type: 'number',
+              minimum: 1,
+              example: 10,
+              description: 'Cantidad a modificar'
+            },
+            operacion: {
+              type: 'string',
+              enum: ['add', 'subtract', 'set'],
+              example: 'add',
+              description: 'Operación a realizar'
+            }
+          }
+        },
+        
+        // Search Filters
+        SearchFilters: {
+          type: 'object',
+          properties: {
+            search: {
+              type: 'string',
+              example: 'balón',
+              description: 'Término de búsqueda'
+            },
+            categoria: {
+              type: 'string',
+              example: 'Fútbol',
+              description: 'Categoría del producto'
+            },
+            activo: {
+              type: 'boolean',
+              example: true,
+              description: 'Estado activo'
+            },
+            estado: {
+              type: 'string',
+              enum: ['pendiente', 'confirmado', 'enviado', 'entregado', 'cancelado'],
+              example: 'pendiente',
+              description: 'Estado del pedido'
+            },
+            fechaInicio: {
+              type: 'string',
+              format: 'date',
+              example: '2024-01-01',
+              description: 'Fecha de inicio'
+            },
+            fechaFin: {
+              type: 'string',
+              format: 'date',
+              example: '2024-01-31',
+              description: 'Fecha de fin'
+            }
+          }
         }
       },
       responses: {
@@ -693,6 +945,167 @@ export const swaggerConfig = {
                 success: false,
                 message: 'Internal server error',
                 errors: []
+              }
+            }
+          }
+        },
+        
+        // Success responses
+        SuccessResponse: {
+          description: 'Operación exitosa',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/SuccessResponse'
+              }
+            }
+          }
+        },
+        
+        CreatedResponse: {
+          description: 'Recurso creado exitosamente',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/SuccessResponse'
+              }
+            }
+          }
+        },
+        
+        PaginatedResponse: {
+          description: 'Respuesta paginada exitosa',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/PaginationResponse'
+              }
+            }
+          }
+        },
+        
+        // Specific resource responses
+        ProductoResponse: {
+          description: 'Producto encontrado',
+          content: {
+            'application/json': {
+              schema: {
+                allOf: [
+                  { $ref: '#/components/schemas/SuccessResponse' },
+                  {
+                    type: 'object',
+                    properties: {
+                      data: {
+                        $ref: '#/components/schemas/Producto'
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        
+        ClienteResponse: {
+          description: 'Cliente encontrado',
+          content: {
+            'application/json': {
+              schema: {
+                allOf: [
+                  { $ref: '#/components/schemas/SuccessResponse' },
+                  {
+                    type: 'object',
+                    properties: {
+                      data: {
+                        $ref: '#/components/schemas/Cliente'
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        
+        PedidoResponse: {
+          description: 'Pedido encontrado',
+          content: {
+            'application/json': {
+              schema: {
+                allOf: [
+                  { $ref: '#/components/schemas/SuccessResponse' },
+                  {
+                    type: 'object',
+                    properties: {
+                      data: {
+                        $ref: '#/components/schemas/Pedido'
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        
+        StatisticsResponse: {
+          description: 'Estadísticas obtenidas exitosamente',
+          content: {
+            'application/json': {
+              schema: {
+                allOf: [
+                  { $ref: '#/components/schemas/SuccessResponse' },
+                  {
+                    type: 'object',
+                    properties: {
+                      data: {
+                        $ref: '#/components/schemas/Statistics'
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        
+        OrderStatisticsResponse: {
+          description: 'Estadísticas de pedidos obtenidas exitosamente',
+          content: {
+            'application/json': {
+              schema: {
+                allOf: [
+                  { $ref: '#/components/schemas/SuccessResponse' },
+                  {
+                    type: 'object',
+                    properties: {
+                      data: {
+                        $ref: '#/components/schemas/OrderStatistics'
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        
+        EncryptedDataResponse: {
+          description: 'Datos cifrados exitosamente',
+          content: {
+            'application/json': {
+              schema: {
+                allOf: [
+                  { $ref: '#/components/schemas/SuccessResponse' },
+                  {
+                    type: 'object',
+                    properties: {
+                      data: {
+                        $ref: '#/components/schemas/EncryptedData'
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
