@@ -342,6 +342,72 @@ export class ProductoDAO implements BaseDAO<Producto> {
   }
 
   /**
+   * Reduce stock for a producto
+   */
+  async reduceStock(id: number, cantidad: number): Promise<Producto | null> {
+    try {
+      const producto = await Producto.findByPk(id);
+      
+      if (!producto) {
+        return null;
+      }
+
+      if (producto.stock < cantidad) {
+        throw new Error(`Insufficient stock. Available: ${producto.stock}, Required: ${cantidad}`);
+      }
+
+      const newStock = producto.stock - cantidad;
+      await producto.update({ stock: newStock });
+      
+      Logger.info(`Stock reduced for producto ${producto.codigo}: ${cantidad} units`);
+      return producto;
+    } catch (error) {
+      Logger.error('Error reducing stock:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Increase stock for a producto
+   */
+  async increaseStock(id: number, cantidad: number): Promise<Producto | null> {
+    try {
+      const producto = await Producto.findByPk(id);
+      
+      if (!producto) {
+        return null;
+      }
+
+      const newStock = producto.stock + cantidad;
+      await producto.update({ stock: newStock });
+      
+      Logger.info(`Stock increased for producto ${producto.codigo}: ${cantidad} units`);
+      return producto;
+    } catch (error) {
+      Logger.error('Error increasing stock:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find productos by IDs
+   */
+  async findByIds(ids: number[]): Promise<Producto[]> {
+    try {
+      return await Producto.findAll({
+        where: {
+          id: {
+            [Op.in]: ids
+          }
+        }
+      });
+    } catch (error) {
+      Logger.error('Error finding productos by IDs:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Hard delete producto (permanent deletion)
    */
   async hardDelete(id: number): Promise<boolean> {
