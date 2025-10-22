@@ -134,7 +134,7 @@ export class PedidoService {
     try {
       Logger.info('Getting all pedidos with filters', filters);
 
-      const result = await this.pedidoDAO.findAllWithFilters(filters);
+      const result = await this.pedidoDAO.findAllWithFilters(filters as any);
       
       Logger.info('Pedidos retrieved successfully', { 
         count: result.pedidos.length,
@@ -185,7 +185,7 @@ export class PedidoService {
       // Validate estado transition
       this.validateEstadoTransition(pedido.estado, estado);
 
-      const updatedPedido = await this.pedidoDAO.update(id, { estado });
+      const updatedPedido = await this.pedidoDAO.update(id, { estado: estado as any });
       
       Logger.info('Pedido estado updated successfully', { id, estado });
       return updatedPedido;
@@ -256,7 +256,7 @@ export class PedidoService {
     try {
       Logger.info('Getting pedidos by date range', { fechaInicio, fechaFin });
 
-      const pedidos = await this.pedidoDAO.findByDateRange(fechaInicio, fechaFin);
+      const pedidos = await this.pedidoDAO.findByDateRange(new Date(fechaInicio), new Date(fechaFin));
       
       Logger.info('Pedidos by date range retrieved successfully', { 
         fechaInicio, 
@@ -281,7 +281,7 @@ export class PedidoService {
       const statistics = await this.pedidoDAO.getStatistics();
       
       Logger.info('Pedido statistics retrieved successfully');
-      return statistics;
+      return statistics as any;
     } catch (error) {
       Logger.error('Error getting pedido statistics', error);
       throw error;
@@ -393,7 +393,7 @@ export class PedidoService {
     try {
       const sensitiveData = {
         observaciones: pedido.observaciones,
-        detalles: pedido.detalles?.map(d => ({
+        detalles: (pedido as any).detalles?.map((d: any) => ({
           cantidad: d.cantidad,
           precioUnitario: d.precioUnitario,
           subtotal: d.subtotal

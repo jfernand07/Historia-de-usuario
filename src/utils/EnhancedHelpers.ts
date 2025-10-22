@@ -1,5 +1,4 @@
 import { Response } from 'express';
-import { Logger } from './helpers';
 import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants';
 
 /**
@@ -193,51 +192,7 @@ export class ResponseHelper {
   }
 }
 
-/**
- * Enhanced Logger with Clean Code principles
- * Provides consistent logging across the application
- */
-export class Logger {
-  private static log(level: string, message: string, ...args: any[]): void {
-    const timestamp = new Date().toISOString();
-    const logMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-    
-    switch (level) {
-      case 'error':
-        console.error(logMessage, ...args);
-        break;
-      case 'warn':
-        console.warn(logMessage, ...args);
-        break;
-      case 'info':
-        console.info(logMessage, ...args);
-        break;
-      case 'debug':
-        if (process.env.NODE_ENV === 'development') {
-          console.debug(logMessage, ...args);
-        }
-        break;
-      default:
-        console.log(logMessage, ...args);
-    }
-  }
-
-  static error(message: string, ...args: any[]): void {
-    this.log('error', message, ...args);
-  }
-
-  static warn(message: string, ...args: any[]): void {
-    this.log('warn', message, ...args);
-  }
-
-  static info(message: string, ...args: any[]): void {
-    this.log('info', message, ...args);
-  }
-
-  static debug(message: string, ...args: any[]): void {
-    this.log('debug', message, ...args);
-  }
-}
+// Logger is imported from helpers.ts
 
 /**
  * Validation utilities with Clean Code principles
@@ -586,9 +541,9 @@ export class ObjectUtils {
     }
     
     const cloned: any = {};
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        cloned[key] = this.deepClone(obj[key]);
+    for (const key in obj as object) {
+      if ((obj as object).hasOwnProperty(key)) {
+        cloned[key] = this.deepClone((obj as any)[key]);
       }
     }
     
@@ -604,7 +559,7 @@ export class ObjectUtils {
     for (const key in source) {
       if (source.hasOwnProperty(key)) {
         if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
-          result[key] = this.deepMerge(result[key] || {}, source[key] as any);
+          result[key] = this.deepMerge((result[key] || {}) as any, source[key] as any);
         } else {
           result[key] = source[key] as any;
         }
@@ -617,11 +572,11 @@ export class ObjectUtils {
   /**
    * Pick specific properties from object
    */
-  static pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+  static pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
     const result = {} as Pick<T, K>;
     keys.forEach(key => {
       if (key in obj) {
-        result[key] = obj[key];
+        result[key] = obj[key] as any;
       }
     });
     return result;

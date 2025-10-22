@@ -1,4 +1,4 @@
-import { Model, WhereOptions, FindOptions, CreateOptions, UpdateOptions, DestroyOptions } from 'sequelize';
+import { Model, WhereOptions, FindOptions, CreateOptions, UpdateOptions, DestroyOptions, ModelStatic } from 'sequelize';
 import { Logger } from '../utils/helpers';
 
 /**
@@ -7,9 +7,9 @@ import { Logger } from '../utils/helpers';
  */
 export abstract class BaseDAO<T extends Model> {
   protected readonly logger = Logger;
-  protected model: typeof Model;
+  protected model: ModelStatic<Model>;
 
-  constructor(model: typeof Model) {
+  constructor(model: ModelStatic<Model>) {
     this.model = model;
   }
 
@@ -392,7 +392,7 @@ export abstract class BaseDAO<T extends Model> {
     try {
       const result = await this.model.sequelize?.query(query, {
         replacements,
-        type: this.model.sequelize?.QueryTypes.SELECT
+        type: (this.model.sequelize as any)?.QueryTypes?.SELECT
       });
       return result;
     } catch (error) {

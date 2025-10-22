@@ -139,13 +139,13 @@ export class AnalyticsController {
         usuarios: {
           total: (await this.daoManager.getUsuarioDAO().getStatistics()).total,
           roles: {
-            admin: (await this.daoManager.getUsuarioDAO().getStatistics()).admins,
-            vendedor: (await this.daoManager.getUsuarioDAO().getStatistics()).vendedores
+            admin: (await this.daoManager.getUsuarioDAO().getStatistics() as any).admins || 0,
+            vendedor: (await this.daoManager.getUsuarioDAO().getStatistics() as any).vendedores || 0
           }
         },
         productos: {
           total: (await this.daoManager.getProductoDAO().getStatistics()).total,
-          categories: Object.keys((await this.daoManager.getProductoDAO().getStatistics()).categories),
+          categories: Object.keys((await this.daoManager.getProductoDAO().getStatistics() as any).categories || {}),
           lowStock: (await this.daoManager.getProductoDAO().findLowStock(10)).length
         },
         clientes: {

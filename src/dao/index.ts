@@ -316,4 +316,3 @@ export class DAOManager {
 export { UsuarioDAO } from './UsuarioDAO';
 export { ProductoDAO } from './ProductoDAO';
 export { ClienteDAO } from './ClienteDAO';
-export { DAOFactory, DAOManager };

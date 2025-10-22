@@ -44,4 +44,41 @@ export class ResponseHelper {
       errors
     });
   }
+
+  static badRequest(res: any, message: string, errors?: any): void {
+    res.status(400).json({
+      success: false,
+      message,
+      errors
+    });
+  }
+
+  static unauthorized(res: any, message: string): void {
+    res.status(401).json({
+      success: false,
+      message
+    });
+  }
+
+  static forbidden(res: any, message: string): void {
+    res.status(403).json({
+      success: false,
+      message
+    });
+  }
+
+  static notFound(res: any, message: string): void {
+    res.status(404).json({
+      success: false,
+      message
+    });
+  }
+
+  static internalError(res: any, message: string, error?: any): void {
+    res.status(500).json({
+      success: false,
+      message,
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
 }

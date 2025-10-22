@@ -394,7 +394,7 @@ export abstract class BaseMiddleware {
     }
     
     const store = global.rateLimitStore;
-    const userLimit = store.get(key) || { count: 0, resetTime: now + windowMs };
+    const userLimit = store.get(key as string) || { count: 0, resetTime: now + windowMs };
     
     if (now > userLimit.resetTime) {
       userLimit.count = 0;
@@ -406,7 +406,7 @@ export abstract class BaseMiddleware {
     }
     
     userLimit.count++;
-    store.set(key, userLimit);
+    store.set(key as string, userLimit);
     
     return true;
   }

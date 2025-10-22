@@ -250,7 +250,7 @@ export abstract class BaseService {
     for (const key in source) {
       if (source.hasOwnProperty(key)) {
         if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
-          result[key] = this.deepMerge(result[key] || {}, source[key] as any);
+          result[key] = this.deepMerge((result[key] || {}) as any, source[key] as any);
         } else {
           result[key] = source[key] as any;
         }

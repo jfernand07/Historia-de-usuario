@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { Usuario } from '../models/Usuario';
-import { Producto } from '../models/Producto';
-import { database } from './connection';
-import { Logger } from '../utils/helpers';
+import { Usuario } from '../../models/Usuario';
+import { Producto } from '../../models/Producto';
+import { database } from '../connection';
+import { Logger } from '../../utils/helpers';
 
 export class SeedData {
   static async seedUsuarios(): Promise<void> {

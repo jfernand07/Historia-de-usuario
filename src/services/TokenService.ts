@@ -23,7 +23,7 @@ export class TokenService {
       type: 'access'
     };
 
-    return jwt.sign(tokenPayload, config.jwt.secret, {
+    return (jwt as any).sign(tokenPayload, config.jwt.secret, {
       expiresIn: config.jwt.expiresIn,
       issuer: 'sportsline-api',
       audience: 'sportsline-client'
@@ -36,10 +36,12 @@ export class TokenService {
   static generateRefreshToken(payload: Pick<TokenPayload, 'id'>): string {
     const tokenPayload: TokenPayload = {
       id: payload.id,
+      email: '', // Required field
+      rol: '', // Required field
       type: 'refresh'
     };
 
-    return jwt.sign(tokenPayload, config.jwt.secret, {
+    return (jwt as any).sign(tokenPayload, config.jwt.refreshSecret, {
       expiresIn: config.jwt.refreshExpiresIn,
       issuer: 'sportsline-api',
       audience: 'sportsline-client'
@@ -51,7 +53,7 @@ export class TokenService {
    */
   static verifyToken(token: string): TokenPayload {
     try {
-      const decoded = jwt.verify(token, config.jwt.secret, {
+      const decoded = (jwt as any).verify(token, config.jwt.secret, {
         issuer: 'sportsline-api',
         audience: 'sportsline-client'
       }) as TokenPayload;

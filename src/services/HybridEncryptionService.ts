@@ -264,4 +264,55 @@ export class HybridEncryptionService {
       throw new Error('Failed to generate secure random string');
     }
   }
+
+  /**
+   * Generic encrypt method for simple data
+   */
+  public async encrypt(data: string): Promise<string> {
+    try {
+      // Generate a random AES key
+      const aesKey = crypto.randomBytes(this.keyLength).toString('hex');
+      
+      // Use default RSA keys from config or generate new ones
+      const rsaKeys = this.generateRSAKeyPair();
+      
+      // Encrypt the data
+      const result = this.hybridEncrypt(data, rsaKeys.publicKey);
+      
+      // Return a combined string with all necessary data
+      return JSON.stringify({
+        encryptedData: result.encryptedData,
+        encryptedKey: result.encryptedKey,
+        iv: result.iv
+      });
+    } catch (error) {
+      Logger.error('Error in generic encrypt:', error);
+      throw new Error('Failed to encrypt data');
+    }
+  }
+
+  /**
+   * Generic decrypt method for simple data
+   */
+  public async decrypt(encryptedDataString: string): Promise<string> {
+    try {
+      const encryptedData = JSON.parse(encryptedDataString);
+      
+      // Use default RSA keys from config
+      const rsaKeys = this.generateRSAKeyPair();
+      
+      // Decrypt the data
+      const result = this.hybridDecrypt(
+        encryptedData.encryptedData,
+        encryptedData.encryptedKey,
+        encryptedData.iv,
+        rsaKeys.privateKey
+      );
+      
+      return result.decryptedData;
+    } catch (error) {
+      Logger.error('Error in generic decrypt:', error);
+      throw new Error('Failed to decrypt data');
+    }
+  }
 }

@@ -1,5 +1,5 @@
 import { Usuario, UsuarioAttributes, UsuarioCreationAttributes } from '../models/Usuario';
-import { BaseDAO } from '../types/database';
+import { BaseDAO } from './BaseDAO';
 import { Logger } from '../utils/helpers';
 import { Op } from 'sequelize';
 
@@ -23,7 +23,7 @@ export interface UsuarioListResult {
   totalPages: number;
 }
 
-export class UsuarioDAO implements BaseDAO<Usuario> {
+export class UsuarioDAO {
   /**
    * Create a new user
    */
@@ -51,9 +51,26 @@ export class UsuarioDAO implements BaseDAO<Usuario> {
   }
 
   /**
+   * Find all usuarios (required by BaseDAO interface)
+   */
+  async findAll(options?: any): Promise<UsuarioListResult> {
+    if (options && (options.filters || options.pagination)) {
+      return await this.findAllUsuarios(options);
+    }
+    const usuarios = await Usuario.findAll(options);
+    return {
+      usuarios,
+      total: usuarios.length,
+      page: 1,
+      limit: usuarios.length,
+      totalPages: 1
+    };
+  }
+
+  /**
    * Find all users with optional filters and pagination
    */
-  async findAll(options?: {
+  async findAllUsuarios(options?: {
     filters?: UsuarioFilters;
     pagination?: UsuarioPaginationOptions;
     order?: [string, 'ASC' | 'DESC'][];
@@ -203,7 +220,7 @@ export class UsuarioDAO implements BaseDAO<Usuario> {
   /**
    * Get user statistics
    */
-  async getStatistics(): Promise<{
+  async getUsuarioStatistics(): Promise<{
     total: number;
     active: number;
     inactive: number;
@@ -248,6 +265,51 @@ export class UsuarioDAO implements BaseDAO<Usuario> {
       return true;
     } catch (error) {
       Logger.error('Error hard deleting usuario:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get usuario statistics
+   */
+  async getStatistics(): Promise<{
+    total: number;
+    active: number;
+    inactive: number;
+    createdAt: {
+      today: number;
+      thisWeek: number;
+      thisMonth: number;
+    };
+  }> {
+    try {
+      const total = await Usuario.count();
+      const active = await Usuario.count({ where: { activo: true } });
+      const inactive = await Usuario.count({ where: { activo: false } });
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const thisWeek = new Date();
+      thisWeek.setDate(today.getDate() - 7);
+      
+      const thisMonth = new Date();
+      thisMonth.setMonth(today.getMonth() - 1);
+      
+      const createdAt = {
+        today: await Usuario.count({ where: { createdAt: { [Op.gte]: today } } }),
+        thisWeek: await Usuario.count({ where: { createdAt: { [Op.gte]: thisWeek } } }),
+        thisMonth: await Usuario.count({ where: { createdAt: { [Op.gte]: thisMonth } } })
+      };
+      
+      return {
+        total,
+        active,
+        inactive,
+        createdAt
+      };
+    } catch (error) {
+      Logger.error('Error getting usuario statistics:', error);
       throw error;
     }
   }

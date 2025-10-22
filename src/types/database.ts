@@ -2,7 +2,7 @@
 export interface BaseDAO<T> {
   create(data: Partial<T>): Promise<T>;
   findById(id: number): Promise<T | null>;
-  findAll(options?: any): Promise<T[]>;
+  findAll(options?: any): Promise<any>;
   update(id: number, data: Partial<T>): Promise<T | null>;
   delete(id: number): Promise<boolean>;
 }

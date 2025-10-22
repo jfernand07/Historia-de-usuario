@@ -208,4 +208,89 @@ export class AuthService {
       throw error;
     }
   }
+
+  /**
+   * Validate user credentials
+   */
+  async validateCredentials(email: string, password: string): Promise<Usuario | null> {
+    try {
+      const user = await Usuario.findOne({ 
+        where: { 
+          email: email,
+          activo: true 
+        } 
+      });
+
+      if (!user) {
+        return null;
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      
+      if (!isPasswordValid) {
+        return null;
+      }
+
+      return user;
+    } catch (error) {
+      Logger.error('Error validating credentials:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new user
+   */
+  async createUser(userData: RegisterDTO): Promise<Usuario> {
+    try {
+      // Check if user already exists
+      const existingUser = await Usuario.findOne({ 
+        where: { email: userData.email } 
+      });
+
+      if (existingUser) {
+        throw new Error('Email already exists');
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+      // Create user
+      const user = await Usuario.create({
+        nombre: userData.nombre,
+        email: userData.email,
+        password: hashedPassword,
+        rol: userData.rol || 'vendedor',
+        activo: true
+      });
+
+      Logger.info(`User created successfully: ${user.email}`);
+      return user;
+    } catch (error) {
+      Logger.error('Error creating user:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate tokens for user
+   */
+  async generateTokens(user: Usuario): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
+    try {
+      const { accessToken, refreshToken } = TokenService.generateTokenPair({
+        id: user.id,
+        email: user.email,
+        rol: user.rol
+      });
+
+      return {
+        accessToken,
+        refreshToken,
+        expiresIn: 3600 // 1 hour
+      };
+    } catch (error) {
+      Logger.error('Error generating tokens:', error);
+      throw error;
+    }
+  }
 }

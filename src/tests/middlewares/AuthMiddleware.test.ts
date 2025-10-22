@@ -1,26 +1,30 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthMiddleware } from '../../src/middlewares/AuthMiddleware';
-import { TokenService } from '../../src/services/TokenService';
-import { UsuarioDAO } from '../../src/dao/UsuarioDAO';
-import { ResponseHelper } from '../../src/utils/helpers';
+import { AuthMiddleware } from '../../middlewares/AuthMiddleware';
+import { TokenService } from '../../services/TokenService';
+import { UsuarioDAO } from '../../dao/UsuarioDAO';
+import { ResponseHelper } from '../../utils/helpers';
 
 // Mock dependencies
-jest.mock('../../src/services/TokenService');
-jest.mock('../../src/dao/UsuarioDAO');
-jest.mock('../../src/utils/helpers');
+jest.mock('../../services/TokenService');
+jest.mock('../../dao/UsuarioDAO');
+jest.mock('../../utils/helpers');
+
+const MockedTokenService = TokenService as any;
+const MockedUsuarioDAO = UsuarioDAO as any;
+const MockedResponseHelper = ResponseHelper as any;
 
 describe('AuthMiddleware', () => {
   let authMiddleware: AuthMiddleware;
-  let mockTokenService: jest.Mocked<TokenService>;
-  let mockUsuarioDAO: jest.Mocked<UsuarioDAO>;
+  let mockTokenService: any;
+  let mockUsuarioDAO: any;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
   let mockNext: NextFunction;
 
   beforeEach(() => {
     authMiddleware = new AuthMiddleware();
-    mockTokenService = new TokenService() as jest.Mocked<TokenService>;
-    mockUsuarioDAO = new UsuarioDAO() as jest.Mocked<UsuarioDAO>;
+    mockTokenService = new TokenService();
+    mockUsuarioDAO = new UsuarioDAO();
     
     mockRequest = {
       headers: {},
@@ -53,15 +57,15 @@ describe('AuthMiddleware', () => {
         authorization: `Bearer ${token}`
       };
 
-      mockTokenService.verifyAccessToken = jest.fn().mockResolvedValue({ userId: 1 });
-      mockUsuarioDAO.findById = jest.fn().mockResolvedValue(mockUser);
+      MockedTokenService.prototype.verifyAccessToken = jest.fn().mockResolvedValue({ userId: 1 });
+      MockedUsuarioDAO.prototype.findById = jest.fn().mockResolvedValue(mockUser);
 
       // Act
       await authMiddleware.verifyToken(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(mockTokenService.verifyAccessToken).toHaveBeenCalledWith(token);
-      expect(mockUsuarioDAO.findById).toHaveBeenCalledWith(1);
+      expect(MockedTokenService.prototype.verifyAccessToken).toHaveBeenCalledWith(token);
+      expect(MockedUsuarioDAO.prototype.findById).toHaveBeenCalledWith(1);
       expect(mockRequest.user).toEqual(mockUser);
       expect(mockNext).toHaveBeenCalled();
     });
@@ -74,7 +78,7 @@ describe('AuthMiddleware', () => {
       await authMiddleware.verifyToken(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Authorization header is required',
         401
@@ -92,7 +96,7 @@ describe('AuthMiddleware', () => {
       await authMiddleware.verifyToken(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Invalid token format',
         401
@@ -107,13 +111,13 @@ describe('AuthMiddleware', () => {
         authorization: `Bearer ${token}`
       };
 
-      mockTokenService.verifyAccessToken = jest.fn().mockRejectedValue(new Error('Invalid token'));
+      MockedTokenService.prototype.verifyAccessToken = jest.fn().mockRejectedValue(new Error('Invalid token'));
 
       // Act
       await authMiddleware.verifyToken(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Invalid or expired token',
         401
@@ -136,14 +140,14 @@ describe('AuthMiddleware', () => {
         authorization: `Bearer ${token}`
       };
 
-      mockTokenService.verifyAccessToken = jest.fn().mockResolvedValue({ userId: 1 });
-      mockUsuarioDAO.findById = jest.fn().mockResolvedValue(mockUser);
+      MockedTokenService.prototype.verifyAccessToken = jest.fn().mockResolvedValue({ userId: 1 });
+      MockedUsuarioDAO.prototype.findById = jest.fn().mockResolvedValue(mockUser);
 
       // Act
       await authMiddleware.verifyToken(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'User account is inactive',
         401
@@ -158,14 +162,14 @@ describe('AuthMiddleware', () => {
         authorization: `Bearer ${token}`
       };
 
-      mockTokenService.verifyAccessToken = jest.fn().mockResolvedValue({ userId: 999 });
-      mockUsuarioDAO.findById = jest.fn().mockResolvedValue(null);
+      MockedTokenService.prototype.verifyAccessToken = jest.fn().mockResolvedValue({ userId: 999 });
+      MockedUsuarioDAO.prototype.findById = jest.fn().mockResolvedValue(null);
 
       // Act
       await authMiddleware.verifyToken(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'User not found',
         401
@@ -210,7 +214,7 @@ describe('AuthMiddleware', () => {
       await authMiddleware.requireAdmin(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Admin access required',
         403
@@ -226,7 +230,7 @@ describe('AuthMiddleware', () => {
       await authMiddleware.requireAdmin(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Authentication required',
         401
@@ -282,7 +286,7 @@ describe('AuthMiddleware', () => {
       await authMiddleware.requireAdminOrVendedor(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Authentication required',
         401
@@ -327,7 +331,7 @@ describe('AuthMiddleware', () => {
       await authMiddleware.requireVendedor(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Vendedor access required',
         403
@@ -343,7 +347,7 @@ describe('AuthMiddleware', () => {
       await authMiddleware.requireVendedor(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Authentication required',
         401
@@ -368,8 +372,8 @@ describe('AuthMiddleware', () => {
         authorization: `Bearer ${token}`
       };
 
-      mockTokenService.verifyAccessToken = jest.fn().mockResolvedValue({ userId: 1 });
-      mockUsuarioDAO.findById = jest.fn().mockResolvedValue(mockUser);
+      MockedTokenService.prototype.verifyAccessToken = jest.fn().mockResolvedValue({ userId: 1 });
+      MockedUsuarioDAO.prototype.findById = jest.fn().mockResolvedValue(mockUser);
 
       // Act
       await authMiddleware.optionalAuth(mockRequest as Request, mockResponse as Response, mockNext);
@@ -398,7 +402,7 @@ describe('AuthMiddleware', () => {
         authorization: `Bearer ${token}`
       };
 
-      mockTokenService.verifyAccessToken = jest.fn().mockRejectedValue(new Error('Invalid token'));
+      MockedTokenService.prototype.verifyAccessToken = jest.fn().mockRejectedValue(new Error('Invalid token'));
 
       // Act
       await authMiddleware.optionalAuth(mockRequest as Request, mockResponse as Response, mockNext);

@@ -1,21 +1,24 @@
 import { Request, Response } from 'express';
-import { ProductoController } from '../../src/controllers/ProductoController';
-import { ProductoDAO } from '../../src/dao/ProductoDAO';
-import { ResponseHelper } from '../../src/utils/helpers';
+import { ProductoController } from '../../controllers/ProductoController';
+import { ProductoDAO } from '../../dao/ProductoDAO';
+import { ResponseHelper } from '../../utils/helpers';
 
 // Mock dependencies
-jest.mock('../../src/dao/ProductoDAO');
-jest.mock('../../src/utils/helpers');
+jest.mock('../../dao/ProductoDAO');
+jest.mock('../../utils/helpers');
+
+const MockedProductoDAO = ProductoDAO as any;
+const MockedResponseHelper = ResponseHelper as any;
 
 describe('ProductoController', () => {
   let productoController: ProductoController;
-  let mockProductoDAO: jest.Mocked<ProductoDAO>;
+  let mockProductoDAO: any;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {
     productoController = new ProductoController();
-    mockProductoDAO = new ProductoDAO() as jest.Mocked<ProductoDAO>;
+    mockProductoDAO = new ProductoDAO();
     
     mockRequest = {
       body: {},
@@ -53,18 +56,18 @@ describe('ProductoController', () => {
       };
 
       mockRequest.body = productoData;
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.codeExists = jest.fn().mockResolvedValue(false);
-      mockProductoDAO.create = jest.fn().mockResolvedValue(mockCreatedProducto);
+      MockedProductoDAO.prototype.codeExists = jest.fn().mockResolvedValue(false);
+      MockedProductoDAO.prototype.create = jest.fn().mockResolvedValue(mockCreatedProducto);
 
       // Act
       await productoController.createProducto(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockProductoDAO.codeExists).toHaveBeenCalledWith(productoData.codigo);
-      expect(mockProductoDAO.create).toHaveBeenCalledWith(productoData);
-      expect(ResponseHelper.success).toHaveBeenCalledWith(
+      expect(MockedProductoDAO.prototype.codeExists).toHaveBeenCalledWith(productoData.codigo);
+      expect(MockedProductoDAO.prototype.create).toHaveBeenCalledWith(productoData);
+      expect(MockedResponseHelper.success).toHaveBeenCalledWith(
         mockResponse,
         mockCreatedProducto,
         'Producto created successfully',
@@ -84,15 +87,15 @@ describe('ProductoController', () => {
       };
 
       mockRequest.body = productoData;
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.codeExists = jest.fn().mockResolvedValue(true);
+      MockedProductoDAO.prototype.codeExists = jest.fn().mockResolvedValue(true);
 
       // Act
       await productoController.createProducto(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Product code already exists',
         400
@@ -111,13 +114,13 @@ describe('ProductoController', () => {
       };
 
       mockRequest.body = productoData;
-      mockRequest.user = { id: 2, rol: 'vendedor' };
+      mockRequest.user = { id: 2, email: 'vendedor@sportsline.com', rol: 'vendedor' };
 
       // Act
       await productoController.createProducto(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Insufficient permissions',
         403
@@ -136,15 +139,15 @@ describe('ProductoController', () => {
       };
 
       mockRequest.body = productoData;
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.codeExists = jest.fn().mockRejectedValue(new Error('Database error'));
+      MockedProductoDAO.prototype.codeExists = jest.fn().mockRejectedValue(new Error('Database error'));
 
       // Act
       await productoController.createProducto(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Error creating producto',
         500,
@@ -186,20 +189,20 @@ describe('ProductoController', () => {
       };
 
       mockRequest.query = { page: '1', limit: '10' };
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.findAll = jest.fn().mockResolvedValue(mockResult);
+      MockedProductoDAO.prototype.findAll = jest.fn().mockResolvedValue(mockResult);
 
       // Act
       await productoController.getAllProductos(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockProductoDAO.findAll).toHaveBeenCalledWith({
+      expect(MockedProductoDAO.prototype.findAll).toHaveBeenCalledWith({
         filters: {},
         pagination: { page: 1, limit: 10 },
         order: [['createdAt', 'DESC']]
       });
-      expect(ResponseHelper.success).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.success).toHaveBeenCalledWith(
         mockResponse,
         mockResult,
         'Productos retrieved successfully'
@@ -223,15 +226,15 @@ describe('ProductoController', () => {
         page: '1',
         limit: '10'
       };
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.findAll = jest.fn().mockResolvedValue(mockResult);
+      MockedProductoDAO.prototype.findAll = jest.fn().mockResolvedValue(mockResult);
 
       // Act
       await productoController.getAllProductos(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockProductoDAO.findAll).toHaveBeenCalledWith({
+      expect(MockedProductoDAO.prototype.findAll).toHaveBeenCalledWith({
         filters: {
           categoria: 'Fútbol',
           activo: true,
@@ -260,16 +263,16 @@ describe('ProductoController', () => {
       };
 
       mockRequest.params = { id: '1' };
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.findById = jest.fn().mockResolvedValue(mockProducto);
+      MockedProductoDAO.prototype.findById = jest.fn().mockResolvedValue(mockProducto);
 
       // Act
       await productoController.getProductoById(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockProductoDAO.findById).toHaveBeenCalledWith(1);
-      expect(ResponseHelper.success).toHaveBeenCalledWith(
+      expect(MockedProductoDAO.prototype.findById).toHaveBeenCalledWith(1);
+      expect(MockedResponseHelper.success).toHaveBeenCalledWith(
         mockResponse,
         mockProducto,
         'Producto retrieved successfully'
@@ -279,15 +282,15 @@ describe('ProductoController', () => {
     it('should return error for non-existent producto', async () => {
       // Arrange
       mockRequest.params = { id: '999' };
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.findById = jest.fn().mockResolvedValue(null);
+      MockedProductoDAO.prototype.findById = jest.fn().mockResolvedValue(null);
 
       // Act
       await productoController.getProductoById(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Producto not found',
         404
@@ -297,13 +300,13 @@ describe('ProductoController', () => {
     it('should return error for invalid id', async () => {
       // Arrange
       mockRequest.params = { id: 'invalid' };
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
 
       // Act
       await productoController.getProductoById(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.badRequest).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.badRequest).toHaveBeenCalledWith(
         mockResponse,
         'Invalid producto ID'
       );
@@ -332,17 +335,17 @@ describe('ProductoController', () => {
 
       mockRequest.params = { id: '1' };
       mockRequest.body = updateData;
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.findById = jest.fn().mockResolvedValue(mockUpdatedProducto);
-      mockProductoDAO.update = jest.fn().mockResolvedValue(mockUpdatedProducto);
+      MockedProductoDAO.prototype.findById = jest.fn().mockResolvedValue(mockUpdatedProducto);
+      MockedProductoDAO.prototype.update = jest.fn().mockResolvedValue(mockUpdatedProducto);
 
       // Act
       await productoController.updateProducto(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockProductoDAO.update).toHaveBeenCalledWith(1, updateData);
-      expect(ResponseHelper.success).toHaveBeenCalledWith(
+      expect(MockedProductoDAO.prototype.update).toHaveBeenCalledWith(1, updateData);
+      expect(MockedResponseHelper.success).toHaveBeenCalledWith(
         mockResponse,
         mockUpdatedProducto,
         'Producto updated successfully'
@@ -357,15 +360,15 @@ describe('ProductoController', () => {
 
       mockRequest.params = { id: '999' };
       mockRequest.body = updateData;
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.findById = jest.fn().mockResolvedValue(null);
+      MockedProductoDAO.prototype.findById = jest.fn().mockResolvedValue(null);
 
       // Act
       await productoController.updateProducto(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Producto not found',
         404
@@ -384,17 +387,17 @@ describe('ProductoController', () => {
       };
 
       mockRequest.params = { id: '1' };
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.findById = jest.fn().mockResolvedValue(mockProducto);
-      mockProductoDAO.delete = jest.fn().mockResolvedValue(true);
+      MockedProductoDAO.prototype.findById = jest.fn().mockResolvedValue(mockProducto);
+      MockedProductoDAO.prototype.delete = jest.fn().mockResolvedValue(true);
 
       // Act
       await productoController.deleteProducto(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockProductoDAO.delete).toHaveBeenCalledWith(1);
-      expect(ResponseHelper.success).toHaveBeenCalledWith(
+      expect(MockedProductoDAO.prototype.delete).toHaveBeenCalledWith(1);
+      expect(MockedResponseHelper.success).toHaveBeenCalledWith(
         mockResponse,
         { id: 1 },
         'Producto deleted successfully'
@@ -404,15 +407,15 @@ describe('ProductoController', () => {
     it('should return error for non-existent producto', async () => {
       // Arrange
       mockRequest.params = { id: '999' };
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.findById = jest.fn().mockResolvedValue(null);
+      MockedProductoDAO.prototype.findById = jest.fn().mockResolvedValue(null);
 
       // Act
       await productoController.deleteProducto(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Producto not found',
         404
@@ -438,17 +441,17 @@ describe('ProductoController', () => {
 
       mockRequest.params = { id: '1' };
       mockRequest.body = stockData;
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
       
-      mockProductoDAO.findById = jest.fn().mockResolvedValue(mockProducto);
-      mockProductoDAO.updateStock = jest.fn().mockResolvedValue(mockProducto);
+      MockedProductoDAO.prototype.findById = jest.fn().mockResolvedValue(mockProducto);
+      MockedProductoDAO.prototype.updateStock = jest.fn().mockResolvedValue(mockProducto);
 
       // Act
       await productoController.updateStock(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockProductoDAO.updateStock).toHaveBeenCalledWith(1, 10, 'add');
-      expect(ResponseHelper.success).toHaveBeenCalledWith(
+      expect(MockedProductoDAO.prototype.updateStock).toHaveBeenCalledWith(1, 10, 'add');
+      expect(MockedResponseHelper.success).toHaveBeenCalledWith(
         mockResponse,
         mockProducto,
         'Stock updated successfully'
@@ -464,13 +467,13 @@ describe('ProductoController', () => {
 
       mockRequest.params = { id: '1' };
       mockRequest.body = stockData;
-      mockRequest.user = { id: 1, rol: 'admin' };
+      mockRequest.user = { id: 1, email: 'admin@sportsline.com', rol: 'admin' };
 
       // Act
       await productoController.updateStock(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.validationError).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.validationError).toHaveBeenCalledWith(
         mockResponse,
         'Invalid operation. Must be add, subtract, or set'
       );

@@ -202,7 +202,7 @@ export class PedidoEncryptionMiddleware {
       const originalJson = res.json;
 
       // Override json method to encrypt statistics before sending
-      res.json = async function(data: any) {
+      res.json = (async function(this: PedidoEncryptionMiddleware, data: any) {
         try {
           if (data && data.data && data.data.totalPedidos !== undefined) {
             // Encrypt statistics data
@@ -218,12 +218,12 @@ export class PedidoEncryptionMiddleware {
             };
           }
 
-          return originalJson.call(this, data);
+          return originalJson.call(res, data);
         } catch (error) {
           Logger.error('Error encrypting statistics data:', error);
-          return originalJson.call(this, data);
+          return originalJson.call(res, data);
         }
-      }.bind(this);
+      }.bind(this)) as any;
 
       next();
 

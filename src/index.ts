@@ -64,7 +64,7 @@ app.get('/health', (req, res) => {
 });
 
 // Error handling middleware
-app.use(ErrorMiddleware.handle);
+app.use(ErrorMiddleware.errorHandler);
 
 // Start server
 app.listen(PORT, () => {

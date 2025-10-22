@@ -1,25 +1,29 @@
 import { Request, Response } from 'express';
-import { AuthController } from '../../src/controllers/AuthController';
-import { AuthService } from '../../src/services/AuthService';
-import { UsuarioDAO } from '../../src/dao/UsuarioDAO';
-import { ResponseHelper } from '../../src/utils/helpers';
+import { AuthController } from '../../controllers/AuthController';
+import { AuthService } from '../../services/AuthService';
+import { UsuarioDAO } from '../../dao/UsuarioDAO';
+import { ResponseHelper } from '../../utils/helpers';
 
 // Mock dependencies
-jest.mock('../../src/services/AuthService');
-jest.mock('../../src/dao/UsuarioDAO');
-jest.mock('../../src/utils/helpers');
+jest.mock('../../services/AuthService');
+jest.mock('../../dao/UsuarioDAO');
+jest.mock('../../utils/helpers');
+
+const MockedAuthService = AuthService as any;
+const MockedUsuarioDAO = UsuarioDAO as any;
+const MockedResponseHelper = ResponseHelper as any;
 
 describe('AuthController', () => {
   let authController: AuthController;
-  let mockAuthService: jest.Mocked<AuthService>;
-  let mockUsuarioDAO: jest.Mocked<UsuarioDAO>;
+  let mockAuthService: any;
+  let mockUsuarioDAO: any;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {
     authController = new AuthController();
-    mockAuthService = new AuthService() as jest.Mocked<AuthService>;
-    mockUsuarioDAO = new UsuarioDAO() as jest.Mocked<UsuarioDAO>;
+    mockAuthService = new AuthService();
+    mockUsuarioDAO = new UsuarioDAO();
     
     mockRequest = {
       body: {},
@@ -59,16 +63,16 @@ describe('AuthController', () => {
 
       mockRequest.body = loginData;
       
-      mockAuthService.validateCredentials = jest.fn().mockResolvedValue(mockUser);
-      mockAuthService.generateTokens = jest.fn().mockResolvedValue(mockTokens);
+      MockedAuthService.prototype.validateCredentials = jest.fn().mockResolvedValue(mockUser);
+      MockedAuthService.prototype.generateTokens = jest.fn().mockResolvedValue(mockTokens);
 
       // Act
       await authController.login(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockAuthService.validateCredentials).toHaveBeenCalledWith(loginData.email, loginData.password);
-      expect(mockAuthService.generateTokens).toHaveBeenCalledWith(mockUser);
-      expect(ResponseHelper.success).toHaveBeenCalledWith(
+      expect(MockedAuthService.prototype.validateCredentials).toHaveBeenCalledWith(loginData.email, loginData.password);
+      expect(MockedAuthService.prototype.generateTokens).toHaveBeenCalledWith(mockUser);
+      expect(MockedResponseHelper.success).toHaveBeenCalledWith(
         mockResponse,
         expect.objectContaining({
           user: mockUser,
@@ -88,14 +92,14 @@ describe('AuthController', () => {
       };
 
       mockRequest.body = loginData;
-      mockAuthService.validateCredentials = jest.fn().mockResolvedValue(null);
+      MockedAuthService.prototype.validateCredentials = jest.fn().mockResolvedValue(null);
 
       // Act
       await authController.login(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockAuthService.validateCredentials).toHaveBeenCalledWith(loginData.email, loginData.password);
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedAuthService.prototype.validateCredentials).toHaveBeenCalledWith(loginData.email, loginData.password);
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Invalid credentials',
         401
@@ -118,13 +122,13 @@ describe('AuthController', () => {
       };
 
       mockRequest.body = loginData;
-      mockAuthService.validateCredentials = jest.fn().mockResolvedValue(mockUser);
+      MockedAuthService.prototype.validateCredentials = jest.fn().mockResolvedValue(mockUser);
 
       // Act
       await authController.login(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'User account is inactive',
         401
@@ -139,13 +143,13 @@ describe('AuthController', () => {
       };
 
       mockRequest.body = loginData;
-      mockAuthService.validateCredentials = jest.fn().mockRejectedValue(new Error('Database error'));
+      MockedAuthService.prototype.validateCredentials = jest.fn().mockRejectedValue(new Error('Database error'));
 
       // Act
       await authController.login(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Error during login',
         500,
@@ -174,14 +178,14 @@ describe('AuthController', () => {
 
       mockRequest.body = registerData;
       
-      mockAuthService.createUser = jest.fn().mockResolvedValue(mockUser);
+      MockedAuthService.prototype.createUser = jest.fn().mockResolvedValue(mockUser);
 
       // Act
       await authController.register(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(mockAuthService.createUser).toHaveBeenCalledWith(registerData);
-      expect(ResponseHelper.success).toHaveBeenCalledWith(
+      expect(MockedAuthService.prototype.createUser).toHaveBeenCalledWith(registerData);
+      expect(MockedResponseHelper.success).toHaveBeenCalledWith(
         mockResponse,
         expect.objectContaining({
           id: mockUser.id,
@@ -204,13 +208,13 @@ describe('AuthController', () => {
       };
 
       mockRequest.body = registerData;
-      mockAuthService.createUser = jest.fn().mockRejectedValue(new Error('Email already exists'));
+      MockedAuthService.prototype.createUser = jest.fn().mockRejectedValue(new Error('Email already exists'));
 
       // Act
       await authController.register(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'Error creating user',
         400,
@@ -231,7 +235,7 @@ describe('AuthController', () => {
       await authController.register(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.validationError).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.validationError).toHaveBeenCalledWith(
         mockResponse,
         expect.any(String)
       );
@@ -255,7 +259,7 @@ describe('AuthController', () => {
       await authController.getProfile(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.success).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.success).toHaveBeenCalledWith(
         mockResponse,
         mockUser,
         'Profile retrieved successfully'
@@ -270,7 +274,7 @@ describe('AuthController', () => {
       await authController.getProfile(mockRequest as Request, mockResponse as Response);
 
       // Assert
-      expect(ResponseHelper.error).toHaveBeenCalledWith(
+      expect(MockedResponseHelper.error).toHaveBeenCalledWith(
         mockResponse,
         'User not authenticated',
         401

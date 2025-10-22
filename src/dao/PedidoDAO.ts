@@ -45,7 +45,24 @@ export interface PedidoStatistics {
   estados: { [key: string]: number };
 }
 
-export class PedidoDAO implements BaseDAO<Pedido> {
+export class PedidoDAO {
+  /**
+   * Find all pedidos (required by BaseDAO interface)
+   */
+  async findAll(options?: any): Promise<PedidoListResult> {
+    if (options && (options.filters || options.pagination)) {
+      return await this.findAllPedidos(options);
+    }
+    const pedidos = await Pedido.findAll(options);
+    return {
+      pedidos,
+      total: pedidos.length,
+      page: 1,
+      limit: pedidos.length,
+      totalPages: 1
+    };
+  }
+
   /**
    * Create a new pedido with detalles
    */
@@ -116,7 +133,7 @@ export class PedidoDAO implements BaseDAO<Pedido> {
   /**
    * Find all pedidos with optional filters and pagination
    */
-  async findAll(options?: {
+  async findAllPedidos(options?: {
     filters?: PedidoFilters;
     pagination?: PedidoPaginationOptions;
     order?: [string, 'ASC' | 'DESC'][];
@@ -179,9 +196,9 @@ export class PedidoDAO implements BaseDAO<Pedido> {
             return {
               ...pedido.toJSON(),
               detalles
-            };
+            } as any;
           })
-        );
+        ) as any;
       }
 
       const totalPages = Math.ceil(total / limit);
@@ -582,7 +599,7 @@ export class PedidoDAO implements BaseDAO<Pedido> {
         clienteId: data.clienteId,
         usuarioId: data.usuarioId,
         total: data.total,
-        estado: data.estado,
+        estado: data.estado as any,
         observaciones: data.observaciones,
         fecha: new Date()
       }, { transaction });

@@ -50,8 +50,8 @@ export class PedidoEncryptionService {
       }
 
       // Encrypt detalles if present
-      if (pedido.detalles && pedido.detalles.length > 0) {
-        const detallesData: DetalleEncryptionData[] = pedido.detalles.map(detalle => ({
+      if ((pedido as any).detalles && (pedido as any).detalles.length > 0) {
+        const detallesData: DetalleEncryptionData[] = (pedido as any).detalles.map((detalle: any) => ({
           productoId: detalle.productoId,
           cantidad: detalle.cantidad,
           precioUnitario: detalle.precioUnitario,

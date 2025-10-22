@@ -1,32 +1,38 @@
-import { PedidoService } from '../../src/services/PedidoService';
-import { PedidoDAO } from '../../src/dao/PedidoDAO';
-import { ProductoDAO } from '../../src/dao/ProductoDAO';
-import { ClienteDAO } from '../../src/dao/ClienteDAO';
-import { UsuarioDAO } from '../../src/dao/UsuarioDAO';
-import { HybridEncryptionService } from '../../src/services/HybridEncryptionService';
+import { PedidoService } from '../../services/PedidoService';
+import { PedidoDAO } from '../../dao/PedidoDAO';
+import { ProductoDAO } from '../../dao/ProductoDAO';
+import { ClienteDAO } from '../../dao/ClienteDAO';
+import { UsuarioDAO } from '../../dao/UsuarioDAO';
+import { HybridEncryptionService } from '../../services/HybridEncryptionService';
 
 // Mock dependencies
-jest.mock('../../src/dao/PedidoDAO');
-jest.mock('../../src/dao/ProductoDAO');
-jest.mock('../../src/dao/ClienteDAO');
-jest.mock('../../src/dao/UsuarioDAO');
-jest.mock('../../src/services/HybridEncryptionService');
+jest.mock('../../dao/PedidoDAO');
+jest.mock('../../dao/ProductoDAO');
+jest.mock('../../dao/ClienteDAO');
+jest.mock('../../dao/UsuarioDAO');
+jest.mock('../../services/HybridEncryptionService');
+
+const MockedPedidoDAO = PedidoDAO as any;
+const MockedProductoDAO = ProductoDAO as any;
+const MockedClienteDAO = ClienteDAO as any;
+const MockedUsuarioDAO = UsuarioDAO as any;
+const MockedEncryptionService = HybridEncryptionService as any;
 
 describe('PedidoService', () => {
   let pedidoService: PedidoService;
-  let mockPedidoDAO: jest.Mocked<PedidoDAO>;
-  let mockProductoDAO: jest.Mocked<ProductoDAO>;
-  let mockClienteDAO: jest.Mocked<ClienteDAO>;
-  let mockUsuarioDAO: jest.Mocked<UsuarioDAO>;
-  let mockEncryptionService: jest.Mocked<HybridEncryptionService>;
+  let mockPedidoDAO: any;
+  let mockProductoDAO: any;
+  let mockClienteDAO: any;
+  let mockUsuarioDAO: any;
+  let mockEncryptionService: any;
 
   beforeEach(() => {
     pedidoService = new PedidoService();
-    mockPedidoDAO = new PedidoDAO() as jest.Mocked<PedidoDAO>;
-    mockProductoDAO = new ProductoDAO() as jest.Mocked<ProductoDAO>;
-    mockClienteDAO = new ClienteDAO() as jest.Mocked<ClienteDAO>;
-    mockUsuarioDAO = new UsuarioDAO() as jest.Mocked<UsuarioDAO>;
-    mockEncryptionService = new HybridEncryptionService() as jest.Mocked<HybridEncryptionService>;
+    mockPedidoDAO = new PedidoDAO();
+    mockProductoDAO = new ProductoDAO();
+    mockClienteDAO = new ClienteDAO();
+    mockUsuarioDAO = new UsuarioDAO();
+    mockEncryptionService = new HybridEncryptionService();
     
     jest.clearAllMocks();
   });
@@ -98,20 +104,20 @@ describe('PedidoService', () => {
         ]
       };
 
-      mockClienteDAO.findById = jest.fn().mockResolvedValue(mockCliente);
-      mockUsuarioDAO.findById = jest.fn().mockResolvedValue(mockUsuario);
-      mockProductoDAO.findByIds = jest.fn().mockResolvedValue(mockProductos);
-      mockPedidoDAO.createWithDetalles = jest.fn().mockResolvedValue(mockCreatedPedido);
-      mockProductoDAO.reduceStock = jest.fn().mockResolvedValue(null);
+      MockedClienteDAO.prototype.findById = jest.fn().mockResolvedValue(mockCliente);
+      MockedUsuarioDAO.prototype.findById = jest.fn().mockResolvedValue(mockUsuario);
+      MockedProductoDAO.prototype.findByIds = jest.fn().mockResolvedValue(mockProductos);
+      MockedPedidoDAO.prototype.createWithDetalles = jest.fn().mockResolvedValue(mockCreatedPedido);
+      MockedProductoDAO.prototype.reduceStock = jest.fn().mockResolvedValue(null);
 
       // Act
       const result = await pedidoService.createPedido(pedidoData, usuarioId);
 
       // Assert
-      expect(mockClienteDAO.findById).toHaveBeenCalledWith(1);
-      expect(mockUsuarioDAO.findById).toHaveBeenCalledWith(1);
-      expect(mockProductoDAO.findByIds).toHaveBeenCalledWith([1, 2]);
-      expect(mockPedidoDAO.createWithDetalles).toHaveBeenCalledWith({
+      expect(MockedClienteDAO.prototype.findById).toHaveBeenCalledWith(1);
+      expect(MockedUsuarioDAO.prototype.findById).toHaveBeenCalledWith(1);
+      expect(MockedProductoDAO.prototype.findByIds).toHaveBeenCalledWith([1, 2]);
+      expect(MockedPedidoDAO.prototype.createWithDetalles).toHaveBeenCalledWith({
         clienteId: 1,
         usuarioId: 1,
         total: 299.98,
@@ -132,7 +138,7 @@ describe('PedidoService', () => {
           }
         ]
       });
-      expect(mockProductoDAO.reduceStock).toHaveBeenCalledTimes(2);
+      expect(MockedProductoDAO.prototype.reduceStock).toHaveBeenCalledTimes(2);
       expect(result).toEqual(mockCreatedPedido);
     });
 
@@ -146,7 +152,7 @@ describe('PedidoService', () => {
 
       const usuarioId = 1;
 
-      mockClienteDAO.findById = jest.fn().mockResolvedValue(null);
+      MockedClienteDAO.prototype.findById = jest.fn().mockResolvedValue(null);
 
       // Act & Assert
       await expect(pedidoService.createPedido(pedidoData, usuarioId))
@@ -173,9 +179,9 @@ describe('PedidoService', () => {
         activo: true
       };
 
-      mockClienteDAO.findById = jest.fn().mockResolvedValue(mockCliente);
-      mockUsuarioDAO.findById = jest.fn().mockResolvedValue(mockUsuario);
-      mockProductoDAO.findByIds = jest.fn().mockResolvedValue([mockProducto]);
+      MockedClienteDAO.prototype.findById = jest.fn().mockResolvedValue(mockCliente);
+      MockedUsuarioDAO.prototype.findById = jest.fn().mockResolvedValue(mockUsuario);
+      MockedProductoDAO.prototype.findByIds = jest.fn().mockResolvedValue([mockProducto]);
 
       // Act & Assert
       await expect(pedidoService.createPedido(pedidoData, usuarioId))
@@ -195,9 +201,9 @@ describe('PedidoService', () => {
       const mockCliente = { id: 1, nombre: 'Cliente Test', activo: true };
       const mockUsuario = { id: 1, nombre: 'Usuario Test', activo: true };
 
-      mockClienteDAO.findById = jest.fn().mockResolvedValue(mockCliente);
-      mockUsuarioDAO.findById = jest.fn().mockResolvedValue(mockUsuario);
-      mockProductoDAO.findByIds = jest.fn().mockResolvedValue([]);
+      MockedClienteDAO.prototype.findById = jest.fn().mockResolvedValue(mockCliente);
+      MockedUsuarioDAO.prototype.findById = jest.fn().mockResolvedValue(mockUsuario);
+      MockedProductoDAO.prototype.findByIds = jest.fn().mockResolvedValue([]);
 
       // Act & Assert
       await expect(pedidoService.createPedido(pedidoData, usuarioId))
@@ -237,13 +243,13 @@ describe('PedidoService', () => {
         }
       };
 
-      mockPedidoDAO.findAllWithFilters = jest.fn().mockResolvedValue(mockResult);
+      MockedPedidoDAO.prototype.findAllWithFilters = jest.fn().mockResolvedValue(mockResult);
 
       // Act
       const result = await pedidoService.getAllPedidos(filters);
 
       // Assert
-      expect(mockPedidoDAO.findAllWithFilters).toHaveBeenCalledWith(filters);
+      expect(MockedPedidoDAO.prototype.findAllWithFilters).toHaveBeenCalledWith(filters);
       expect(result).toEqual(mockResult);
     });
   });
@@ -269,26 +275,26 @@ describe('PedidoService', () => {
         ]
       };
 
-      mockPedidoDAO.findByIdWithDetalles = jest.fn().mockResolvedValue(mockPedido);
+      MockedPedidoDAO.prototype.findByIdWithDetalles = jest.fn().mockResolvedValue(mockPedido);
 
       // Act
       const result = await pedidoService.getPedidoById(pedidoId);
 
       // Assert
-      expect(mockPedidoDAO.findByIdWithDetalles).toHaveBeenCalledWith(pedidoId);
+      expect(MockedPedidoDAO.prototype.findByIdWithDetalles).toHaveBeenCalledWith(pedidoId);
       expect(result).toEqual(mockPedido);
     });
 
     it('should return null for non-existent pedido', async () => {
       // Arrange
       const pedidoId = 999;
-      mockPedidoDAO.findByIdWithDetalles = jest.fn().mockResolvedValue(null);
+      MockedPedidoDAO.prototype.findByIdWithDetalles = jest.fn().mockResolvedValue(null);
 
       // Act
       const result = await pedidoService.getPedidoById(pedidoId);
 
       // Assert
-      expect(mockPedidoDAO.findByIdWithDetalles).toHaveBeenCalledWith(pedidoId);
+      expect(MockedPedidoDAO.prototype.findByIdWithDetalles).toHaveBeenCalledWith(pedidoId);
       expect(result).toBeNull();
     });
   });
@@ -311,15 +317,15 @@ describe('PedidoService', () => {
         estado: newEstado
       };
 
-      mockPedidoDAO.findById = jest.fn().mockResolvedValue(mockPedido);
-      mockPedidoDAO.update = jest.fn().mockResolvedValue(mockUpdatedPedido);
+      MockedPedidoDAO.prototype.findById = jest.fn().mockResolvedValue(mockPedido);
+      MockedPedidoDAO.prototype.update = jest.fn().mockResolvedValue(mockUpdatedPedido);
 
       // Act
       const result = await pedidoService.updatePedidoEstado(pedidoId, newEstado);
 
       // Assert
-      expect(mockPedidoDAO.findById).toHaveBeenCalledWith(pedidoId);
-      expect(mockPedidoDAO.update).toHaveBeenCalledWith(pedidoId, { estado: newEstado });
+      expect(MockedPedidoDAO.prototype.findById).toHaveBeenCalledWith(pedidoId);
+      expect(MockedPedidoDAO.prototype.update).toHaveBeenCalledWith(pedidoId, { estado: newEstado });
       expect(result).toEqual(mockUpdatedPedido);
     });
 
@@ -335,7 +341,7 @@ describe('PedidoService', () => {
         total: 299.98
       };
 
-      mockPedidoDAO.findById = jest.fn().mockResolvedValue(mockPedido);
+      MockedPedidoDAO.prototype.findById = jest.fn().mockResolvedValue(mockPedido);
 
       // Act & Assert
       await expect(pedidoService.updatePedidoEstado(pedidoId, newEstado))
@@ -347,7 +353,7 @@ describe('PedidoService', () => {
       const pedidoId = 999;
       const newEstado = 'confirmado';
 
-      mockPedidoDAO.findById = jest.fn().mockResolvedValue(null);
+      MockedPedidoDAO.prototype.findById = jest.fn().mockResolvedValue(null);
 
       // Act & Assert
       await expect(pedidoService.updatePedidoEstado(pedidoId, newEstado))
@@ -382,17 +388,17 @@ describe('PedidoService', () => {
         estado: 'cancelado'
       };
 
-      mockPedidoDAO.findByIdWithDetalles = jest.fn().mockResolvedValue(mockPedido);
-      mockPedidoDAO.update = jest.fn().mockResolvedValue(mockUpdatedPedido);
-      mockProductoDAO.increaseStock = jest.fn().mockResolvedValue(null);
+      MockedPedidoDAO.prototype.findByIdWithDetalles = jest.fn().mockResolvedValue(mockPedido);
+      MockedPedidoDAO.prototype.update = jest.fn().mockResolvedValue(mockUpdatedPedido);
+      MockedProductoDAO.prototype.increaseStock = jest.fn().mockResolvedValue(null);
 
       // Act
       const result = await pedidoService.cancelPedido(pedidoId);
 
       // Assert
-      expect(mockPedidoDAO.findByIdWithDetalles).toHaveBeenCalledWith(pedidoId);
-      expect(mockPedidoDAO.update).toHaveBeenCalledWith(pedidoId, { estado: 'cancelado' });
-      expect(mockProductoDAO.increaseStock).toHaveBeenCalledTimes(2);
+      expect(MockedPedidoDAO.prototype.findByIdWithDetalles).toHaveBeenCalledWith(pedidoId);
+      expect(MockedPedidoDAO.prototype.update).toHaveBeenCalledWith(pedidoId, { estado: 'cancelado' });
+      expect(MockedProductoDAO.prototype.increaseStock).toHaveBeenCalledTimes(2);
       expect(result).toEqual(mockUpdatedPedido);
     });
 
@@ -408,7 +414,7 @@ describe('PedidoService', () => {
         detalles: []
       };
 
-      mockPedidoDAO.findByIdWithDetalles = jest.fn().mockResolvedValue(mockPedido);
+      MockedPedidoDAO.prototype.findByIdWithDetalles = jest.fn().mockResolvedValue(mockPedido);
 
       // Act & Assert
       await expect(pedidoService.cancelPedido(pedidoId))
@@ -427,7 +433,7 @@ describe('PedidoService', () => {
         detalles: []
       };
 
-      mockPedidoDAO.findByIdWithDetalles = jest.fn().mockResolvedValue(mockPedido);
+      MockedPedidoDAO.prototype.findByIdWithDetalles = jest.fn().mockResolvedValue(mockPedido);
 
       // Act & Assert
       await expect(pedidoService.cancelPedido(pedidoId))
@@ -453,22 +459,22 @@ describe('PedidoService', () => {
 
       const mockCliente = { id: 1, nombre: 'Cliente Test', activo: true };
 
-      mockClienteDAO.findById = jest.fn().mockResolvedValue(mockCliente);
-      mockPedidoDAO.findByCliente = jest.fn().mockResolvedValue(mockPedidos);
+      MockedClienteDAO.prototype.findById = jest.fn().mockResolvedValue(mockCliente);
+      MockedPedidoDAO.prototype.findByCliente = jest.fn().mockResolvedValue(mockPedidos);
 
       // Act
       const result = await pedidoService.getPedidosByCliente(clienteId);
 
       // Assert
-      expect(mockClienteDAO.findById).toHaveBeenCalledWith(clienteId);
-      expect(mockPedidoDAO.findByCliente).toHaveBeenCalledWith(clienteId);
+      expect(MockedClienteDAO.prototype.findById).toHaveBeenCalledWith(clienteId);
+      expect(MockedPedidoDAO.prototype.findByCliente).toHaveBeenCalledWith(clienteId);
       expect(result).toEqual(mockPedidos);
     });
 
     it('should throw error for non-existent cliente', async () => {
       // Arrange
       const clienteId = 999;
-      mockClienteDAO.findById = jest.fn().mockResolvedValue(null);
+      MockedClienteDAO.prototype.findById = jest.fn().mockResolvedValue(null);
 
       // Act & Assert
       await expect(pedidoService.getPedidosByCliente(clienteId))
@@ -494,22 +500,22 @@ describe('PedidoService', () => {
 
       const mockProducto = { id: 1, nombre: 'Producto Test', activo: true };
 
-      mockProductoDAO.findById = jest.fn().mockResolvedValue(mockProducto);
-      mockPedidoDAO.findByProducto = jest.fn().mockResolvedValue(mockPedidos);
+      MockedProductoDAO.prototype.findById = jest.fn().mockResolvedValue(mockProducto);
+      MockedPedidoDAO.prototype.findByProducto = jest.fn().mockResolvedValue(mockPedidos);
 
       // Act
       const result = await pedidoService.getPedidosByProducto(productoId);
 
       // Assert
-      expect(mockProductoDAO.findById).toHaveBeenCalledWith(productoId);
-      expect(mockPedidoDAO.findByProducto).toHaveBeenCalledWith(productoId);
+      expect(MockedProductoDAO.prototype.findById).toHaveBeenCalledWith(productoId);
+      expect(MockedPedidoDAO.prototype.findByProducto).toHaveBeenCalledWith(productoId);
       expect(result).toEqual(mockPedidos);
     });
 
     it('should throw error for non-existent producto', async () => {
       // Arrange
       const productoId = 999;
-      mockProductoDAO.findById = jest.fn().mockResolvedValue(null);
+      MockedProductoDAO.prototype.findById = jest.fn().mockResolvedValue(null);
 
       // Act & Assert
       await expect(pedidoService.getPedidosByProducto(productoId))
@@ -534,13 +540,13 @@ describe('PedidoService', () => {
         pedidosUltimoMes: 25
       };
 
-      mockPedidoDAO.getStatistics = jest.fn().mockResolvedValue(mockStatistics);
+      MockedPedidoDAO.prototype.getStatistics = jest.fn().mockResolvedValue(mockStatistics);
 
       // Act
       const result = await pedidoService.getPedidoStatistics();
 
       // Assert
-      expect(mockPedidoDAO.getStatistics).toHaveBeenCalled();
+      expect(MockedPedidoDAO.prototype.getStatistics).toHaveBeenCalled();
       expect(result).toEqual(mockStatistics);
     });
   });
@@ -550,7 +556,14 @@ describe('PedidoService', () => {
       // Arrange
       const mockPedido = {
         id: 1,
+        clienteId: 1,
+        usuarioId: 1,
+        fecha: new Date(),
+        total: 179.98,
+        estado: 'pendiente',
         observaciones: 'Pedido urgente',
+        createdAt: new Date(),
+        updatedAt: new Date(),
         detalles: [
           {
             cantidad: 2,
@@ -558,16 +571,16 @@ describe('PedidoService', () => {
             subtotal: 179.98
           }
         ]
-      };
+      } as any;
 
       const mockEncryptedData = 'encrypted_data_string';
-      mockEncryptionService.encrypt = jest.fn().mockResolvedValue(mockEncryptedData);
+      MockedEncryptionService.prototype.encrypt = jest.fn().mockResolvedValue(mockEncryptedData);
 
       // Act
       const result = await pedidoService.encryptPedidoData(mockPedido);
 
       // Assert
-      expect(mockEncryptionService.encrypt).toHaveBeenCalled();
+      expect(MockedEncryptionService.prototype.encrypt).toHaveBeenCalled();
       expect(result).toBe(mockEncryptedData);
     });
   });
@@ -587,13 +600,13 @@ describe('PedidoService', () => {
         ]
       };
 
-      mockEncryptionService.decrypt = jest.fn().mockResolvedValue(JSON.stringify(mockDecryptedData));
+      MockedEncryptionService.prototype.decrypt = jest.fn().mockResolvedValue(JSON.stringify(mockDecryptedData));
 
       // Act
       const result = await pedidoService.decryptPedidoData(encryptedData);
 
       // Assert
-      expect(mockEncryptionService.decrypt).toHaveBeenCalledWith(encryptedData);
+      expect(MockedEncryptionService.prototype.decrypt).toHaveBeenCalledWith(encryptedData);
       expect(result).toEqual(mockDecryptedData);
     });
   });

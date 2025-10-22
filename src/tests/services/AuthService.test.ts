@@ -1,22 +1,26 @@
-import { AuthService } from '../../src/services/AuthService';
-import { UsuarioDAO } from '../../src/dao/UsuarioDAO';
-import { TokenService } from '../../src/services/TokenService';
-import { Logger } from '../../src/utils/helpers';
+import { AuthService } from '../../services/AuthService';
+import { UsuarioDAO } from '../../dao/UsuarioDAO';
+import { TokenService } from '../../services/TokenService';
+import { Logger } from '../../utils/helpers';
 
 // Mock dependencies
-jest.mock('../../src/dao/UsuarioDAO');
-jest.mock('../../src/services/TokenService');
-jest.mock('../../src/utils/helpers');
+jest.mock('../../dao/UsuarioDAO');
+jest.mock('../../services/TokenService');
+jest.mock('../../utils/helpers');
+
+const MockedUsuarioDAO = UsuarioDAO as any;
+const MockedTokenService = TokenService as any;
+const MockedLogger = Logger as any;
 
 describe('AuthService', () => {
   let authService: AuthService;
-  let mockUsuarioDAO: jest.Mocked<UsuarioDAO>;
-  let mockTokenService: jest.Mocked<TokenService>;
+  let mockUsuarioDAO: any;
+  let mockTokenService: any;
 
   beforeEach(() => {
     authService = new AuthService();
-    mockUsuarioDAO = new UsuarioDAO() as jest.Mocked<UsuarioDAO>;
-    mockTokenService = new TokenService() as jest.Mocked<TokenService>;
+    mockUsuarioDAO = new UsuarioDAO();
+    mockTokenService = new TokenService();
     
     jest.clearAllMocks();
   });
@@ -39,7 +43,7 @@ describe('AuthService', () => {
         updatedAt: new Date()
       };
 
-      mockUsuarioDAO.findByEmail = jest.fn().mockResolvedValue(mockUser);
+      MockedUsuarioDAO.prototype.findByEmail = jest.fn().mockResolvedValue(mockUser);
       
       // Mock bcrypt compare
       const bcrypt = require('bcryptjs');
@@ -49,7 +53,7 @@ describe('AuthService', () => {
       const result = await authService.validateCredentials(email, password);
 
       // Assert
-      expect(mockUsuarioDAO.findByEmail).toHaveBeenCalledWith(email);
+      expect(MockedUsuarioDAO.prototype.findByEmail).toHaveBeenCalledWith(email);
       expect(result).toEqual(mockUser);
     });
 
@@ -58,13 +62,13 @@ describe('AuthService', () => {
       const email = 'nonexistent@sportsline.com';
       const password = 'password123';
 
-      mockUsuarioDAO.findByEmail = jest.fn().mockResolvedValue(null);
+      MockedUsuarioDAO.prototype.findByEmail = jest.fn().mockResolvedValue(null);
 
       // Act
       const result = await authService.validateCredentials(email, password);
 
       // Assert
-      expect(mockUsuarioDAO.findByEmail).toHaveBeenCalledWith(email);
+      expect(MockedUsuarioDAO.prototype.findByEmail).toHaveBeenCalledWith(email);
       expect(result).toBeNull();
     });
 
@@ -85,7 +89,7 @@ describe('AuthService', () => {
         updatedAt: new Date()
       };
 
-      mockUsuarioDAO.findByEmail = jest.fn().mockResolvedValue(mockUser);
+      MockedUsuarioDAO.prototype.findByEmail = jest.fn().mockResolvedValue(mockUser);
       
       // Mock bcrypt compare
       const bcrypt = require('bcryptjs');
@@ -95,7 +99,7 @@ describe('AuthService', () => {
       const result = await authService.validateCredentials(email, password);
 
       // Assert
-      expect(mockUsuarioDAO.findByEmail).toHaveBeenCalledWith(email);
+      expect(MockedUsuarioDAO.prototype.findByEmail).toHaveBeenCalledWith(email);
       expect(result).toBeNull();
     });
 
@@ -104,7 +108,7 @@ describe('AuthService', () => {
       const email = 'admin@sportsline.com';
       const password = 'password123';
 
-      mockUsuarioDAO.findByEmail = jest.fn().mockRejectedValue(new Error('Database error'));
+      MockedUsuarioDAO.prototype.findByEmail = jest.fn().mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(authService.validateCredentials(email, password))
@@ -134,8 +138,8 @@ describe('AuthService', () => {
         updatedAt: new Date()
       };
 
-      mockUsuarioDAO.findByEmail = jest.fn().mockResolvedValue(null);
-      mockUsuarioDAO.create = jest.fn().mockResolvedValue(mockCreatedUser);
+      MockedUsuarioDAO.prototype.findByEmail = jest.fn().mockResolvedValue(null);
+      MockedUsuarioDAO.prototype.create = jest.fn().mockResolvedValue(mockCreatedUser);
       
       // Mock bcrypt hash
       const bcrypt = require('bcryptjs');
@@ -145,8 +149,8 @@ describe('AuthService', () => {
       const result = await authService.createUser(userData);
 
       // Assert
-      expect(mockUsuarioDAO.findByEmail).toHaveBeenCalledWith(userData.email);
-      expect(mockUsuarioDAO.create).toHaveBeenCalledWith({
+      expect(MockedUsuarioDAO.prototype.findByEmail).toHaveBeenCalledWith(userData.email);
+      expect(MockedUsuarioDAO.prototype.create).toHaveBeenCalledWith({
         ...userData,
         password: hashedPassword,
         activo: true
@@ -173,7 +177,7 @@ describe('AuthService', () => {
         updatedAt: new Date()
       };
 
-      mockUsuarioDAO.findByEmail = jest.fn().mockResolvedValue(existingUser);
+      MockedUsuarioDAO.prototype.findByEmail = jest.fn().mockResolvedValue(existingUser);
 
       // Act & Assert
       await expect(authService.createUser(userData))
@@ -189,8 +193,8 @@ describe('AuthService', () => {
         rol: 'vendedor' as const
       };
 
-      mockUsuarioDAO.findByEmail = jest.fn().mockResolvedValue(null);
-      mockUsuarioDAO.create = jest.fn().mockRejectedValue(new Error('Database error'));
+      MockedUsuarioDAO.prototype.findByEmail = jest.fn().mockResolvedValue(null);
+      MockedUsuarioDAO.prototype.create = jest.fn().mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(authService.createUser(userData))
@@ -217,15 +221,15 @@ describe('AuthService', () => {
         expiresIn: 3600
       };
 
-      mockTokenService.generateAccessToken = jest.fn().mockResolvedValue(mockTokens.accessToken);
-      mockTokenService.generateRefreshToken = jest.fn().mockResolvedValue(mockTokens.refreshToken);
+      MockedTokenService.prototype.generateAccessToken = jest.fn().mockResolvedValue(mockTokens.accessToken);
+      MockedTokenService.prototype.generateRefreshToken = jest.fn().mockResolvedValue(mockTokens.refreshToken);
 
       // Act
-      const result = await authService.generateTokens(mockUser);
+      const result = await authService.generateTokens(mockUser as any);
 
       // Assert
-      expect(mockTokenService.generateAccessToken).toHaveBeenCalledWith(mockUser);
-      expect(mockTokenService.generateRefreshToken).toHaveBeenCalledWith(mockUser);
+      expect(MockedTokenService.prototype.generateAccessToken).toHaveBeenCalledWith(mockUser);
+      expect(MockedTokenService.prototype.generateRefreshToken).toHaveBeenCalledWith(mockUser);
       expect(result).toEqual({
         accessToken: mockTokens.accessToken,
         refreshToken: mockTokens.refreshToken,
@@ -245,10 +249,10 @@ describe('AuthService', () => {
         updatedAt: new Date()
       };
 
-      mockTokenService.generateAccessToken = jest.fn().mockRejectedValue(new Error('Token generation error'));
+      MockedTokenService.prototype.generateAccessToken = jest.fn().mockRejectedValue(new Error('Token generation error'));
 
       // Act & Assert
-      await expect(authService.generateTokens(mockUser))
+      await expect(authService.generateTokens(mockUser as any))
         .rejects.toThrow('Token generation error');
     });
   });
@@ -269,17 +273,17 @@ describe('AuthService', () => {
 
       const newAccessToken = 'new-access-token';
 
-      mockTokenService.verifyRefreshToken = jest.fn().mockResolvedValue({ userId: mockUser.id });
-      mockUsuarioDAO.findById = jest.fn().mockResolvedValue(mockUser);
-      mockTokenService.generateAccessToken = jest.fn().mockResolvedValue(newAccessToken);
+      MockedTokenService.prototype.verifyRefreshToken = jest.fn().mockResolvedValue({ userId: mockUser.id });
+      MockedUsuarioDAO.prototype.findById = jest.fn().mockResolvedValue(mockUser);
+      MockedTokenService.prototype.generateAccessToken = jest.fn().mockResolvedValue(newAccessToken);
 
       // Act
       const result = await authService.refreshAccessToken(refreshToken);
 
       // Assert
-      expect(mockTokenService.verifyRefreshToken).toHaveBeenCalledWith(refreshToken);
-      expect(mockUsuarioDAO.findById).toHaveBeenCalledWith(mockUser.id);
-      expect(mockTokenService.generateAccessToken).toHaveBeenCalledWith(mockUser);
+      expect(MockedTokenService.prototype.verifyRefreshToken).toHaveBeenCalledWith(refreshToken);
+      expect(MockedUsuarioDAO.prototype.findById).toHaveBeenCalledWith(mockUser.id);
+      expect(MockedTokenService.prototype.generateAccessToken).toHaveBeenCalledWith(mockUser);
       expect(result).toEqual({
         accessToken: newAccessToken,
         expiresIn: 3600
@@ -290,7 +294,7 @@ describe('AuthService', () => {
       // Arrange
       const refreshToken = 'invalid-refresh-token';
 
-      mockTokenService.verifyRefreshToken = jest.fn().mockRejectedValue(new Error('Invalid refresh token'));
+      MockedTokenService.prototype.verifyRefreshToken = jest.fn().mockRejectedValue(new Error('Invalid refresh token'));
 
       // Act & Assert
       await expect(authService.refreshAccessToken(refreshToken))
@@ -310,8 +314,8 @@ describe('AuthService', () => {
         updatedAt: new Date()
       };
 
-      mockTokenService.verifyRefreshToken = jest.fn().mockResolvedValue({ userId: mockUser.id });
-      mockUsuarioDAO.findById = jest.fn().mockResolvedValue(mockUser);
+      MockedTokenService.prototype.verifyRefreshToken = jest.fn().mockResolvedValue({ userId: mockUser.id });
+      MockedUsuarioDAO.prototype.findById = jest.fn().mockResolvedValue(mockUser);
 
       // Act & Assert
       await expect(authService.refreshAccessToken(refreshToken))

@@ -1,5 +1,5 @@
 import { Producto, ProductoAttributes, ProductoCreationAttributes } from '../models/Producto';
-import { BaseDAO } from '../types/database';
+import { BaseDAO } from './BaseDAO';
 import { Logger } from '../utils/helpers';
 import { Op } from 'sequelize';
 
@@ -34,7 +34,7 @@ export interface ProductoStatistics {
   totalValue: number;
 }
 
-export class ProductoDAO implements BaseDAO<Producto> {
+export class ProductoDAO {
   /**
    * Create a new producto
    */
@@ -74,9 +74,26 @@ export class ProductoDAO implements BaseDAO<Producto> {
   }
 
   /**
+   * Find all productos (required by BaseDAO interface)
+   */
+  async findAll(options?: any): Promise<ProductoListResult> {
+    if (options && (options.filters || options.pagination)) {
+      return await this.findAllProductos(options);
+    }
+    const productos = await Producto.findAll(options);
+    return {
+      productos,
+      total: productos.length,
+      page: 1,
+      limit: productos.length,
+      totalPages: 1
+    };
+  }
+
+  /**
    * Find all productos with optional filters and pagination
    */
-  async findAll(options?: {
+  async findAllProductos(options?: {
     filters?: ProductoFilters;
     pagination?: ProductoPaginationOptions;
     order?: [string, 'ASC' | 'DESC'][];
@@ -298,7 +315,7 @@ export class ProductoDAO implements BaseDAO<Producto> {
   /**
    * Get producto statistics
    */
-  async getStatistics(): Promise<ProductoStatistics> {
+  async getProductoStatistics(): Promise<ProductoStatistics> {
     try {
       const [total, active, inactive, lowStock] = await Promise.all([
         Producto.count(),
@@ -423,6 +440,66 @@ export class ProductoDAO implements BaseDAO<Producto> {
       return true;
     } catch (error) {
       Logger.error('Error hard deleting producto:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get producto statistics
+   */
+  async getStatistics(): Promise<{
+    total: number;
+    active: number;
+    inactive: number;
+    lowStock: number;
+    categories: { [key: string]: number };
+    totalValue: number;
+  }> {
+    try {
+      const total = await Producto.count();
+      const active = await Producto.count({ where: { activo: true } });
+      const inactive = await Producto.count({ where: { activo: false } });
+      
+      // Find productos with low stock (less than 10)
+      const lowStock = await Producto.count({ 
+        where: { 
+          stock: { [Op.lt]: 10 },
+          activo: true 
+        } 
+      });
+      
+      // Get categories distribution
+      const productos = await Producto.findAll({
+        attributes: ['categoria'],
+        where: { activo: true }
+      });
+      
+      const categories: { [key: string]: number } = {};
+      productos.forEach(producto => {
+        const categoria = producto.categoria || 'Sin categoría';
+        categories[categoria] = (categories[categoria] || 0) + 1;
+      });
+      
+      // Calculate total value
+      const productosWithValue = await Producto.findAll({
+        attributes: ['stock', 'precio'],
+        where: { activo: true }
+      });
+      
+      const totalValue = productosWithValue.reduce((sum, producto) => {
+        return sum + (producto.stock * parseFloat(producto.precio.toString()));
+      }, 0);
+      
+      return {
+        total,
+        active,
+        inactive,
+        lowStock,
+        categories,
+        totalValue
+      };
+    } catch (error) {
+      Logger.error('Error getting producto statistics:', error);
       throw error;
     }
   }

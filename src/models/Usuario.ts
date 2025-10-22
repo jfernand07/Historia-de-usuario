@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import { database } from './connection';
+import { database } from '../database/connection';
 
 // Usuario attributes interface
 export interface UsuarioAttributes {

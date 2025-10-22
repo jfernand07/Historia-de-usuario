@@ -33,7 +33,7 @@ export interface ClienteStatistics {
   documentTypes: { [key: string]: number };
 }
 
-export class ClienteDAO implements BaseDAO<Cliente> {
+export class ClienteDAO {
   /**
    * Create a new cliente
    */
@@ -85,9 +85,26 @@ export class ClienteDAO implements BaseDAO<Cliente> {
   }
 
   /**
+   * Find all clientes (required by BaseDAO interface)
+   */
+  async findAll(options?: any): Promise<ClienteListResult> {
+    if (options && (options.filters || options.pagination)) {
+      return await this.findAllClientes(options);
+    }
+    const clientes = await Cliente.findAll(options);
+    return {
+      clientes,
+      total: clientes.length,
+      page: 1,
+      limit: clientes.length,
+      totalPages: 1
+    };
+  }
+
+  /**
    * Find all clientes with optional filters and pagination
    */
-  async findAll(options?: {
+  async findAllClientes(options?: {
     filters?: ClienteFilters;
     pagination?: ClientePaginationOptions;
     order?: [string, 'ASC' | 'DESC'][];

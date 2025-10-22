@@ -57,15 +57,20 @@ export class PedidoController {
         productos.push({
           productoId: item.productoId,
           cantidad: item.cantidad,
-          precioUnitario: parseFloat(producto.precio.toString())
+          precioUnitario: parseFloat(producto.precio.toString()),
+          pedidoId: 0, // Will be set when pedido is created
+          subtotal: parseFloat(producto.precio.toString()) * item.cantidad
         });
 
         stockUpdates.push({
           productoId: item.productoId,
           cantidad: item.cantidad,
-          operacion: 'subtract'
+          operacion: 'subtract' as 'add' | 'subtract' | 'set'
         });
       }
+
+      // Calculate total
+      const total = productos.reduce((sum, item) => sum + item.subtotal, 0);
 
       // Create pedido with detalles
       const pedido = await this.pedidoDAO.create({
@@ -73,6 +78,7 @@ export class PedidoController {
         usuarioId,
         fecha: new Date(),
         estado: 'pendiente',
+        total,
         observaciones: pedidoData.observaciones,
         detalles: productos
       });

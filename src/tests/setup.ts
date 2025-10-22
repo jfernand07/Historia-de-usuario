@@ -11,17 +11,6 @@ process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret';
 process.env.JWT_EXPIRES_IN = '1h';
 process.env.JWT_REFRESH_EXPIRES_IN = '7d';
 
-// Mock console methods to reduce noise in tests
-global.console = {
-  ...console,
-  // Uncomment to ignore console.log in tests
-  // log: jest.fn(),
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-};
-
 // Global test timeout
 jest.setTimeout(10000);
 
@@ -34,16 +23,40 @@ jest.mock('sequelize', () => {
     transaction: jest.fn().mockImplementation((callback) => callback({})),
   };
   
+  // Mock Model class
+  class MockModel {
+    static create = jest.fn();
+    static findByPk = jest.fn();
+    static findOne = jest.fn();
+    static findAll = jest.fn();
+    static findAndCountAll = jest.fn();
+    static update = jest.fn();
+    static destroy = jest.fn();
+    static count = jest.fn();
+    static bulkCreate = jest.fn();
+    static init = jest.fn();
+    
+    constructor() {}
+    
+    save = jest.fn();
+    destroy = jest.fn();
+    update = jest.fn();
+    reload = jest.fn();
+    toJSON = jest.fn();
+  }
+  
   return {
     Sequelize: jest.fn().mockImplementation(() => mockSequelize),
+    Model: MockModel,
     DataTypes: {
-      INTEGER: 'INTEGER',
-      STRING: 'STRING',
-      TEXT: 'TEXT',
-      DECIMAL: 'DECIMAL',
-      BOOLEAN: 'BOOLEAN',
-      DATE: 'DATE',
-      NOW: 'NOW',
+      INTEGER: jest.fn().mockReturnValue('INTEGER'),
+      STRING: jest.fn().mockReturnValue('STRING'),
+      TEXT: jest.fn().mockReturnValue('TEXT'),
+      DECIMAL: jest.fn().mockReturnValue('DECIMAL'),
+      BOOLEAN: jest.fn().mockReturnValue('BOOLEAN'),
+      DATE: jest.fn().mockReturnValue('DATE'),
+      NOW: jest.fn().mockReturnValue('NOW'),
+      ENUM: jest.fn().mockReturnValue('ENUM'),
     },
     Op: {
       and: Symbol('and'),
@@ -83,7 +96,9 @@ jest.mock('bcryptjs', () => ({
 
 // Mock jsonwebtoken
 jest.mock('jsonwebtoken', () => ({
-  sign: jest.fn().mockReturnValue('mock-jwt-token'),
+  sign: jest.fn().mockImplementation((payload, secret, options) => {
+    return 'mock-jwt-token';
+  }),
   verify: jest.fn().mockReturnValue({ userId: 1 }),
   decode: jest.fn().mockReturnValue({ userId: 1 }),
 }));
@@ -128,9 +143,9 @@ jest.mock('express', () => {
     listen: jest.fn(),
   }));
   
-  mockExpress.json = jest.fn();
-  mockExpress.urlencoded = jest.fn();
-  mockExpress.static = jest.fn();
+  (mockExpress as any).json = jest.fn();
+  (mockExpress as any).urlencoded = jest.fn();
+  (mockExpress as any).static = jest.fn();
   
   return mockExpress;
 });
@@ -149,80 +164,6 @@ jest.mock('swagger-ui-express', () => ({
 
 // Mock swagger-jsdoc
 jest.mock('swagger-jsdoc', () => jest.fn().mockReturnValue({}));
-
-// Global test utilities
-global.testUtils = {
-  createMockRequest: (overrides = {}) => ({
-    body: {},
-    params: {},
-    query: {},
-    headers: {},
-    user: undefined,
-    ...overrides,
-  }),
-  
-  createMockResponse: () => ({
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-    send: jest.fn().mockReturnThis(),
-    end: jest.fn().mockReturnThis(),
-  }),
-  
-  createMockNext: () => jest.fn(),
-  
-  createMockUser: (overrides = {}) => ({
-    id: 1,
-    nombre: 'Test User',
-    email: 'test@sportsline.com',
-    rol: 'admin',
-    activo: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  }),
-  
-  createMockProducto: (overrides = {}) => ({
-    id: 1,
-    codigo: 'DEP-001',
-    nombre: 'Test Product',
-    descripcion: 'Test Description',
-    precio: 99.99,
-    stock: 50,
-    categoria: 'Test Category',
-    activo: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  }),
-  
-  createMockCliente: (overrides = {}) => ({
-    id: 1,
-    nombre: 'Test Client',
-    email: 'client@test.com',
-    telefono: '+573001234567',
-    documento: '12345678',
-    tipoDocumento: 'cedula',
-    direccion: 'Test Address',
-    activo: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  }),
-  
-  createMockPedido: (overrides = {}) => ({
-    id: 1,
-    clienteId: 1,
-    usuarioId: 1,
-    fecha: new Date(),
-    total: 199.98,
-    estado: 'pendiente',
-    observaciones: 'Test Order',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    detalles: [],
-    ...overrides,
-  }),
-};
 
 // Clean up after each test
 afterEach(() => {
