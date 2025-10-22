@@ -12,6 +12,7 @@ import usuariosRoutes from './routes/usuarios';
 import productosRoutes from './routes/productos';
 import clientesRoutes from './routes/clientes';
 import pedidosRoutes from './routes/pedidos';
+import pedidosEncryptionRoutes from './routes/pedidos-encryption';
 import encryptionRoutes from './routes/encryption';
 
 // Import middlewares
@@ -69,6 +70,7 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/productos', productosRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/pedidos', pedidosRoutes);
+app.use('/api/pedidos-encryption', pedidosEncryptionRoutes);
 app.use('/api/encryption', encryptionRoutes);
 
 // Basic route
