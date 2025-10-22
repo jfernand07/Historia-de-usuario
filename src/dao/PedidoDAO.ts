@@ -418,4 +418,372 @@ export class PedidoDAO implements BaseDAO<Pedido> {
       throw error;
     }
   }
+
+  /**
+   * Find pedidos with filters and pagination (optimized for queries)
+   */
+  async findAllWithFilters(filters: PedidoFilters & { page?: number; limit?: number }): Promise<{
+    pedidos: PedidoWithDetails[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    try {
+      const {
+        clienteId,
+        usuarioId,
+        estado,
+        fechaInicio,
+        fechaFin,
+        productoId,
+        page = 1,
+        limit = 10
+      } = filters;
+
+      const offset = (page - 1) * limit;
+      
+      // Build where clause
+      const whereClause: any = {};
+      
+      if (clienteId) {
+        whereClause.clienteId = clienteId;
+      }
+      
+      if (usuarioId) {
+        whereClause.usuarioId = usuarioId;
+      }
+      
+      if (estado) {
+        whereClause.estado = estado;
+      }
+
+      if (fechaInicio || fechaFin) {
+        whereClause.fecha = {};
+        if (fechaInicio) {
+          whereClause.fecha[Op.gte] = fechaInicio;
+        }
+        if (fechaFin) {
+          whereClause.fecha[Op.lte] = fechaFin;
+        }
+      }
+
+      // If filtering by producto, we need to join with DetallePedido
+      let pedidoIds: number[] = [];
+      if (productoId) {
+        const detalles = await DetallePedido.findAll({
+          where: { productoId },
+          attributes: ['pedidoId']
+        });
+        pedidoIds = detalles.map(d => d.pedidoId);
+        
+        if (pedidoIds.length === 0) {
+          return {
+            pedidos: [],
+            pagination: { page, limit, total: 0, totalPages: 0 }
+          };
+        }
+        
+        whereClause.id = { [Op.in]: pedidoIds };
+      }
+
+      // Get total count
+      const total = await Pedido.count({ where: whereClause });
+      
+      // Get paginated results with detalles
+      const pedidos = await Pedido.findAll({
+        where: whereClause,
+        order: [['fecha', 'DESC']],
+        limit,
+        offset
+      });
+
+      // Get detalles for all pedidos in one query
+      const pedidoIdsForDetalles = pedidos.map(p => p.id);
+      const allDetalles = await DetallePedido.findAll({
+        where: { pedidoId: { [Op.in]: pedidoIdsForDetalles } }
+      });
+
+      // Group detalles by pedidoId
+      const detallesByPedido: { [key: number]: DetallePedido[] } = {};
+      allDetalles.forEach(detalle => {
+        if (!detallesByPedido[detalle.pedidoId]) {
+          detallesByPedido[detalle.pedidoId] = [];
+        }
+        detallesByPedido[detalle.pedidoId].push(detalle);
+      });
+
+      // Combine pedidos with their detalles
+      const pedidosWithDetails = pedidos.map(pedido => ({
+        ...pedido.toJSON(),
+        detalles: detallesByPedido[pedido.id] || []
+      })) as PedidoWithDetails[];
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        pedidos: pedidosWithDetails,
+        pagination: { page, limit, total, totalPages }
+      };
+    } catch (error) {
+      Logger.error('Error finding pedidos with filters:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find pedido by ID with detalles and related data
+   */
+  async findByIdWithDetalles(id: number): Promise<PedidoWithDetails | null> {
+    try {
+      const pedido = await Pedido.findByPk(id);
+      
+      if (!pedido) {
+        return null;
+      }
+
+      const detalles = await DetallePedido.findAll({
+        where: { pedidoId: id }
+      });
+
+      return {
+        ...pedido.toJSON(),
+        detalles
+      } as PedidoWithDetails;
+    } catch (error) {
+      Logger.error('Error finding pedido by ID with detalles:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create pedido with detalles in a transaction
+   */
+  async createWithDetalles(data: {
+    clienteId: number;
+    usuarioId: number;
+    total: number;
+    estado: string;
+    observaciones?: string;
+    detalles: Array<{
+      productoId: number;
+      cantidad: number;
+      precioUnitario: number;
+      subtotal: number;
+    }>;
+  }): Promise<PedidoWithDetails> {
+    const transaction = await Pedido.sequelize!.transaction();
+    
+    try {
+      // Create pedido
+      const pedido = await Pedido.create({
+        clienteId: data.clienteId,
+        usuarioId: data.usuarioId,
+        total: data.total,
+        estado: data.estado,
+        observaciones: data.observaciones,
+        fecha: new Date()
+      }, { transaction });
+
+      // Create detalles
+      const detallesCreados = await Promise.all(
+        data.detalles.map(detalle => 
+          DetallePedido.create({
+            pedidoId: pedido.id,
+            productoId: detalle.productoId,
+            cantidad: detalle.cantidad,
+            precioUnitario: detalle.precioUnitario,
+            subtotal: detalle.subtotal
+          }, { transaction })
+        )
+      );
+
+      await transaction.commit();
+      
+      Logger.info(`Pedido created with transaction: ${pedido.id} with ${detallesCreados.length} detalles`);
+      
+      return {
+        ...pedido.toJSON(),
+        detalles: detallesCreados
+      } as PedidoWithDetails;
+    } catch (error) {
+      await transaction.rollback();
+      Logger.error('Error creating pedido with detalles:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get pedidos by estado with pagination
+   */
+  async findByEstado(estado: string, page: number = 1, limit: number = 10): Promise<{
+    pedidos: PedidoWithDetails[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    try {
+      const offset = (page - 1) * limit;
+      
+      const total = await Pedido.count({ where: { estado } });
+      
+      const pedidos = await Pedido.findAll({
+        where: { estado },
+        order: [['fecha', 'DESC']],
+        limit,
+        offset
+      });
+
+      // Get detalles for all pedidos
+      const pedidoIds = pedidos.map(p => p.id);
+      const allDetalles = await DetallePedido.findAll({
+        where: { pedidoId: { [Op.in]: pedidoIds } }
+      });
+
+      // Group detalles by pedidoId
+      const detallesByPedido: { [key: number]: DetallePedido[] } = {};
+      allDetalles.forEach(detalle => {
+        if (!detallesByPedido[detalle.pedidoId]) {
+          detallesByPedido[detalle.pedidoId] = [];
+        }
+        detallesByPedido[detalle.pedidoId].push(detalle);
+      });
+
+      // Combine pedidos with their detalles
+      const pedidosWithDetails = pedidos.map(pedido => ({
+        ...pedido.toJSON(),
+        detalles: detallesByPedido[pedido.id] || []
+      })) as PedidoWithDetails[];
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        pedidos: pedidosWithDetails,
+        pagination: { page, limit, total, totalPages }
+      };
+    } catch (error) {
+      Logger.error('Error finding pedidos by estado:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get recent pedidos (last 30 days)
+   */
+  async getRecentPedidos(limit: number = 10): Promise<PedidoWithDetails[]> {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const pedidos = await Pedido.findAll({
+        where: {
+          fecha: {
+            [Op.gte]: thirtyDaysAgo
+          }
+        },
+        order: [['fecha', 'DESC']],
+        limit
+      });
+
+      // Get detalles for all pedidos
+      const pedidoIds = pedidos.map(p => p.id);
+      const allDetalles = await DetallePedido.findAll({
+        where: { pedidoId: { [Op.in]: pedidoIds } }
+      });
+
+      // Group detalles by pedidoId
+      const detallesByPedido: { [key: number]: DetallePedido[] } = {};
+      allDetalles.forEach(detalle => {
+        if (!detallesByPedido[detalle.pedidoId]) {
+          detallesByPedido[detalle.pedidoId] = [];
+        }
+        detallesByPedido[detalle.pedidoId].push(detalle);
+      });
+
+      // Combine pedidos with their detalles
+      const pedidosWithDetails = pedidos.map(pedido => ({
+        ...pedido.toJSON(),
+        detalles: detallesByPedido[pedido.id] || []
+      })) as PedidoWithDetails[];
+
+      return pedidosWithDetails;
+    } catch (error) {
+      Logger.error('Error getting recent pedidos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get pedidos summary for dashboard
+   */
+  async getPedidosSummary(): Promise<{
+    totalPedidos: number;
+    pedidosHoy: number;
+    pedidosEstaSemana: number;
+    pedidosEsteMes: number;
+    ventasTotales: number;
+    ventasHoy: number;
+    ventasEstaSemana: number;
+    ventasEsteMes: number;
+  }> {
+    try {
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      
+      const inicioSemana = new Date(hoy);
+      inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+      
+      const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+      const [
+        totalPedidos,
+        pedidosHoy,
+        pedidosEstaSemana,
+        pedidosEsteMes,
+        ventasTotales,
+        ventasHoy,
+        ventasEstaSemana,
+        ventasEsteMes
+      ] = await Promise.all([
+        Pedido.count(),
+        Pedido.count({ where: { fecha: { [Op.gte]: hoy } } }),
+        Pedido.count({ where: { fecha: { [Op.gte]: inicioSemana } } }),
+        Pedido.count({ where: { fecha: { [Op.gte]: inicioMes } } }),
+        Pedido.findOne({
+          attributes: [[Pedido.sequelize!.fn('SUM', Pedido.sequelize!.col('total')), 'total']]
+        }),
+        Pedido.findOne({
+          attributes: [[Pedido.sequelize!.fn('SUM', Pedido.sequelize!.col('total')), 'total']],
+          where: { fecha: { [Op.gte]: hoy } }
+        }),
+        Pedido.findOne({
+          attributes: [[Pedido.sequelize!.fn('SUM', Pedido.sequelize!.col('total')), 'total']],
+          where: { fecha: { [Op.gte]: inicioSemana } }
+        }),
+        Pedido.findOne({
+          attributes: [[Pedido.sequelize!.fn('SUM', Pedido.sequelize!.col('total')), 'total']],
+          where: { fecha: { [Op.gte]: inicioMes } }
+        })
+      ]);
+
+      return {
+        totalPedidos,
+        pedidosHoy,
+        pedidosEstaSemana,
+        pedidosEsteMes,
+        ventasTotales: parseFloat((ventasTotales as any)?.dataValues?.total || '0'),
+        ventasHoy: parseFloat((ventasHoy as any)?.dataValues?.total || '0'),
+        ventasEstaSemana: parseFloat((ventasEstaSemana as any)?.dataValues?.total || '0'),
+        ventasEsteMes: parseFloat((ventasEsteMes as any)?.dataValues?.total || '0')
+      };
+    } catch (error) {
+      Logger.error('Error getting pedidos summary:', error);
+      throw error;
+    }
+  }
 }

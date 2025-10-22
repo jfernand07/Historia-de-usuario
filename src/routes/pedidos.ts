@@ -512,4 +512,268 @@ router.put('/:id/cancel',
   pedidoController.cancelPedido
 );
 
+/**
+ * @swagger
+ * /pedidos/estado/{estado}:
+ *   get:
+ *     summary: Get pedidos by estado with pagination
+ *     tags: [Pedidos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: estado
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [pendiente, confirmado, enviado, entregado, cancelado]
+ *         description: Estado to filter by
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Pedidos by estado retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/estado/:estado',
+  authMiddleware.verifyToken,
+  authMiddleware.requireAdminOrVendedor,
+  pedidoController.getPedidosByEstado
+);
+
+/**
+ * @swagger
+ * /pedidos/recent:
+ *   get:
+ *     summary: Get recent pedidos (last 30 days)
+ *     tags: [Pedidos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Maximum number of pedidos to return
+ *     responses:
+ *       200:
+ *         description: Recent pedidos retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/recent',
+  authMiddleware.verifyToken,
+  authMiddleware.requireAdminOrVendedor,
+  pedidoController.getRecentPedidos
+);
+
+/**
+ * @swagger
+ * /pedidos/summary:
+ *   get:
+ *     summary: Get pedidos summary for dashboard
+ *     tags: [Pedidos]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Pedidos summary retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/summary',
+  authMiddleware.verifyToken,
+  authMiddleware.requireAdminOrVendedor,
+  pedidoController.getPedidosSummary
+);
+
+/**
+ * @swagger
+ * /pedidos/advanced-filters:
+ *   get:
+ *     summary: Get pedidos with advanced filters
+ *     tags: [Pedidos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: clienteId
+ *         schema:
+ *           type: number
+ *         description: Filter by cliente ID
+ *       - in: query
+ *         name: usuarioId
+ *         schema:
+ *           type: number
+ *         description: Filter by usuario ID
+ *       - in: query
+ *         name: estado
+ *         schema:
+ *           type: string
+ *           enum: [pendiente, confirmado, enviado, entregado, cancelado]
+ *         description: Filter by estado
+ *       - in: query
+ *         name: fechaInicio
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter by start date
+ *       - in: query
+ *         name: fechaFin
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter by end date
+ *       - in: query
+ *         name: productoId
+ *         schema:
+ *           type: number
+ *         description: Filter by producto ID
+ *       - in: query
+ *         name: minTotal
+ *         schema:
+ *           type: number
+ *         description: Minimum total amount
+ *       - in: query
+ *         name: maxTotal
+ *         schema:
+ *           type: number
+ *         description: Maximum total amount
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Pedidos with advanced filters retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/advanced-filters',
+  authMiddleware.verifyToken,
+  authMiddleware.requireAdminOrVendedor,
+  pedidoController.getPedidosWithAdvancedFilters
+);
+
+/**
+ * @swagger
+ * /pedidos/by-estados:
+ *   post:
+ *     summary: Get pedidos by multiple estados
+ *     tags: [Pedidos]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - estados
+ *             properties:
+ *               estados:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [pendiente, confirmado, enviado, entregado, cancelado]
+ *                 example: ["pendiente", "confirmado"]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Pedidos by estados retrieved successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/by-estados',
+  authMiddleware.verifyToken,
+  authMiddleware.requireAdminOrVendedor,
+  pedidoController.getPedidosByEstados
+);
+
+/**
+ * @swagger
+ * /pedidos/analytics:
+ *   get:
+ *     summary: Get pedidos analytics
+ *     tags: [Pedidos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, year]
+ *           default: month
+ *         description: Analytics period
+ *     responses:
+ *       200:
+ *         description: Pedidos analytics retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/analytics',
+  authMiddleware.verifyToken,
+  authMiddleware.requireAdminOrVendedor,
+  pedidoController.getPedidosAnalytics
+);
+
 export default router;
