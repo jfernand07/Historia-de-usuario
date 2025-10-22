@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # SportsLine API Service
+  sportsline-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sportsline-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres.nfvctrdnjdofpncxefhl:fPXx0YSCsf8UIzkR@aws-1-us-east-1.pooler.supabase.com:6543/postgres
+      - DB_HOST=aws-1-us-east-1.pooler.supabase.com
+      - DB_PORT=6543
+      - DB_USERNAME=postgres.nfvctrdnjdofpncxefhl
+      - DB_PASSWORD=fPXx0YSCsf8UIzkR
+      - DB_NAME=postgres
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRES_IN=1h
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - AES_KEY=your-aes-key-32-chars-long-change-in-production
+    restart: unless-stopped
+    # Resource limits for CPU and RAM
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    # Read-only root filesystem for security
+    read_only: true
+    # Temporary filesystem for writable directories
+    tmpfs:
+      - /tmp
+      - /app/node_modules/.cache
+
+  # Development service (optional)
+  sportsline-api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: sportsline-api-dev
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres.nfvctrdnjdofpncxefhl:fPXx0YSCsf8UIzkR@aws-1-us-east-1.pooler.supabase.com:6543/postgres
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
+    restart: unless-stopped
+    profiles:
+      - dev
